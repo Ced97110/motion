@@ -71,6 +71,7 @@ interface OffsetResult {
   note?: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function extractSinglePhysicalPageBase64(
   pdfPath: string,
   physicalPage1Indexed: number
@@ -112,35 +113,20 @@ const readPageNumberTool: Anthropic.Tool = {
   },
 };
 
-async function detectOne(
+async function probeOnePage(
   client: Anthropic,
-  sourceId: string,
-  pdfFile: string
-): Promise<OffsetResult> {
-  const pdfPath = path.join(RAW_DIR, pdfFile);
-  const exists = fsSync.existsSync(pdfPath);
-  if (!exists) {
-    return {
-      sourceId,
-      pdfFile,
-      totalPhysicalPages: 0,
-      samplePhysicalPage: 0,
-      printedPageReported: null,
-      offset: null,
-      note: "PDF file missing",
-    };
-  }
-  // Probe a mid-book page so we skip front matter reliably.
-  const buffer = await fs.readFile(pdfPath);
-  const srcDoc = await PDFDocument.load(new Uint8Array(buffer));
-  const total = srcDoc.getPageCount();
-  const samplePhysical = Math.max(40, Math.floor(total / 2));
-
-  const { base64, actualPage } = await extractSinglePhysicalPageBase64(
+  pdfPath: string,
+  physicalPage: number
+): Promise<{
+  printed: number | null;
+  note: string;
+  actualPage: number;
+  totalPages: number;
+}> {
+  const { base64, actualPage, totalPages } = await extractSinglePhysicalPageBase64(
     pdfPath,
-    samplePhysical
+    physicalPage
   );
-
   const response = await client.messages.create({
     model: MODEL,
     max_tokens: 512,
@@ -164,37 +150,130 @@ async function detectOne(
     tools: [readPageNumberTool],
     tool_choice: { type: "tool", name: "report_printed_page_number" },
   });
-
   const toolUse = response.content.find(
     (b): b is Anthropic.ToolUseBlock => b.type === "tool_use"
   );
   if (!toolUse) {
-    return {
-      sourceId,
-      pdfFile,
-      totalPhysicalPages: total,
-      samplePhysicalPage: actualPage,
-      printedPageReported: null,
-      offset: null,
-      note: "No tool call in response",
-    };
+    return { printed: null, note: "No tool call", actualPage, totalPages };
   }
-
   const input = toolUse.input as {
     printed_page_number: number | null;
     rationale: string;
   };
-  const printed = input.printed_page_number;
-  const offset = printed !== null ? actualPage - printed : null;
+  return {
+    printed: input.printed_page_number,
+    note: input.rationale,
+    actualPage,
+    totalPages,
+  };
+}
+
+async function detectOne(
+  client: Anthropic,
+  sourceId: string,
+  pdfFile: string
+): Promise<OffsetResult> {
+  const pdfPath = path.join(RAW_DIR, pdfFile);
+  const exists = fsSync.existsSync(pdfPath);
+  if (!exists) {
+    return {
+      sourceId,
+      pdfFile,
+      totalPhysicalPages: 0,
+      samplePhysicalPage: 0,
+      printedPageReported: null,
+      offset: null,
+      note: "PDF file missing",
+    };
+  }
+  const buffer = await fs.readFile(pdfPath);
+  const srcDoc = await PDFDocument.load(new Uint8Array(buffer));
+  const total = srcDoc.getPageCount();
+
+  // Try up to 4 different physical pages (mostly mid-book, stepping outward)
+  // and collect every non-null result. If at least two offsets agree, trust
+  // that consensus; otherwise take the first non-null. This defends against
+  // per-chapter localised page labels (e.g., appendix restarts) that can
+  // produce wildly wrong single-probe offsets.
+  const probeTargets = [
+    Math.max(40, Math.floor(total * 0.5)),
+    Math.max(40, Math.floor(total * 0.3)),
+    Math.max(40, Math.floor(total * 0.7)),
+    Math.max(40, Math.floor(total * 0.4)),
+  ];
+
+  const observed: Array<{ physical: number; printed: number; offset: number }> = [];
+  let lastNote = "";
+  let lastPhysical = 0;
+  for (const target of probeTargets) {
+    const probe = await probeOnePage(client, pdfPath, target);
+    lastPhysical = probe.actualPage;
+    lastNote = probe.note;
+    if (probe.printed !== null) {
+      observed.push({
+        physical: probe.actualPage,
+        printed: probe.printed,
+        offset: probe.actualPage - probe.printed,
+      });
+      if (observed.length >= 3) break; // enough to vote
+    }
+  }
+
+  if (observed.length === 0) {
+    return {
+      sourceId,
+      pdfFile,
+      totalPhysicalPages: total,
+      samplePhysicalPage: lastPhysical,
+      printedPageReported: null,
+      offset: null,
+      note: `no printed page numbers visible in 4 probe points; last rationale: ${lastNote}`,
+    };
+  }
+
+  // Pick the offset that appears most often; ties broken by first occurrence.
+  const tally = new Map<number, number>();
+  for (const o of observed) {
+    tally.set(o.offset, (tally.get(o.offset) ?? 0) + 1);
+  }
+  const [consensusOffset] = [...tally.entries()].sort(
+    (a, b) => b[1] - a[1]
+  )[0];
+  const picked = observed.find((o) => o.offset === consensusOffset)!;
+
+  // Sanity check: book front matter rarely exceeds ~50 pages. Offsets above
+  // that threshold almost always indicate chapter-local page numbering (each
+  // chapter restarts at "p.1"), which no single offset can fix. Flag those
+  // as null so the resolver defaults to 0 instead of extracting wildly wrong
+  // physical pages.
+  const OFFSET_SANITY_LIMIT = 50;
+  if (Math.abs(consensusOffset) > OFFSET_SANITY_LIMIT) {
+    return {
+      sourceId,
+      pdfFile,
+      totalPhysicalPages: total,
+      samplePhysicalPage: picked.physical,
+      printedPageReported: picked.printed,
+      offset: null,
+      note: `detected offset +${consensusOffset} exceeds sanity limit (±${OFFSET_SANITY_LIMIT}); probable chapter-local numbering — needs manual inspection`,
+    };
+  }
+
+  const agreementNote =
+    observed.length > 1 && tally.get(consensusOffset)! > 1
+      ? `consensus across ${tally.get(consensusOffset)}/${observed.length} probes`
+      : observed.length > 1
+        ? `probes disagreed: ${observed.map((o) => `+${o.offset}`).join(", ")} — picked first`
+        : `single probe only`;
 
   return {
     sourceId,
     pdfFile,
     totalPhysicalPages: total,
-    samplePhysicalPage: actualPage,
-    printedPageReported: printed,
-    offset,
-    note: input.rationale,
+    samplePhysicalPage: picked.physical,
+    printedPageReported: picked.printed,
+    offset: consensusOffset,
+    note: agreementNote,
   };
 }
 

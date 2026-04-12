@@ -143,6 +143,8 @@ interface DiagramJson {
 interface ParsedArgs {
   dryRun: boolean;
   sampleSlugs: string[] | null;
+  sourceIds: string[] | null;
+  limit: number | null;
   model: string;
   maxTokens: number;
 }
@@ -162,9 +164,19 @@ function parseArgs(): ParsedArgs {
     ? sampleRaw.split(",").map((s) => s.trim()).filter(Boolean)
     : null;
 
+  const sourceRaw = flagValue("--source", "");
+  const sourceIds = sourceRaw
+    ? sourceRaw.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean)
+    : null;
+
+  const limitRaw = flagValue("--limit", "");
+  const limit = limitRaw ? parseInt(limitRaw, 10) : null;
+
   return {
     dryRun: args.includes("--dry-run"),
     sampleSlugs,
+    sourceIds,
+    limit: limit !== null && Number.isFinite(limit) && limit > 0 ? limit : null,
     model: flagValue("--model", DEFAULT_MODEL),
     maxTokens: parseInt(flagValue("--max-tokens", String(DEFAULT_MAX_TOKENS)), 10),
   };
@@ -678,9 +690,12 @@ async function main(): Promise<void> {
   // Always write the plan as a side effect so latest inventory is on disk.
   await writePlan(records);
 
-  if (!args.sampleSlugs || args.sampleSlugs.length === 0) {
+  const hasSample = args.sampleSlugs && args.sampleSlugs.length > 0;
+  const hasSource = args.sourceIds && args.sourceIds.length > 0;
+
+  if (!hasSample && !hasSource) {
     process.stdout.write(
-      `No --sample slugs and no --dry-run. Provide --sample or --dry-run. Plan written to ${PLAN_PATH}.\n`
+      `No --sample slugs, --source ids, or --dry-run. Plan written to ${PLAN_PATH}.\n`
     );
     return;
   }
@@ -688,38 +703,60 @@ async function main(): Promise<void> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     process.stdout.write(
-      `ANTHROPIC_API_KEY not set — skipping actual resolution. Set the env var and rerun with --sample to resolve.\n`
+      `ANTHROPIC_API_KEY not set — skipping actual resolution.\n`
     );
     return;
   }
 
-  // Pick one resolvable marker per requested slug.
   const targets: MarkerRecord[] = [];
-  for (const slug of args.sampleSlugs) {
-    const candidates = records.filter(
-      (r) => r.slug === slug && r.sourceId !== null && r.pages.length > 0
-    );
-    if (candidates.length === 0) {
-      process.stdout.write(
-        `  ! ${slug}: no resolvable marker (missing source or page). Skipping.\n`
+  if (hasSample && args.sampleSlugs) {
+    // Pick one resolvable marker per requested slug.
+    for (const slug of args.sampleSlugs) {
+      const candidates = records.filter(
+        (r) => r.slug === slug && r.sourceId !== null && r.pages.length > 0
       );
-      continue;
+      if (candidates.length === 0) {
+        process.stdout.write(
+          `  ! ${slug}: no resolvable marker (missing source or page). Skipping.\n`
+        );
+        continue;
+      }
+      targets.push(candidates[0]);
     }
-    targets.push(candidates[0]);
+  }
+  if (hasSource && args.sourceIds) {
+    // Include EVERY resolvable marker whose sourceId is in the requested set.
+    const requestedSources = new Set(args.sourceIds);
+    for (const r of records) {
+      if (
+        r.sourceId !== null &&
+        requestedSources.has(r.sourceId) &&
+        r.pages.length > 0
+      ) {
+        targets.push(r);
+      }
+    }
   }
 
   if (targets.length === 0) {
-    process.stdout.write(`No resolvable sample targets. Exiting.\n`);
+    process.stdout.write(`No resolvable targets. Exiting.\n`);
     return;
   }
 
+  // Apply --limit if provided (cap the batch size for cost control).
+  const capped = args.limit !== null ? targets.slice(0, args.limit) : targets;
+
   const client = new Anthropic();
   process.stdout.write(
-    `Resolving ${targets.length} sample markers with ${args.model}...\n\n`
+    `Resolving ${capped.length}${args.limit !== null && targets.length > capped.length ? ` of ${targets.length}` : ""} markers with ${args.model}...\n\n`
   );
 
-  for (const record of targets) {
-    const label = `[${record.slug}] L${record.line} ${record.sourceId} p.${record.pages.join(",")}`;
+  let okCount = 0;
+  let failCount = 0;
+
+  for (let i = 0; i < capped.length; i++) {
+    const record = capped[i];
+    const label = `[${i + 1}/${capped.length}] ${record.slug} L${record.line} ${record.sourceId} p.${record.pages.join(",")}`;
     process.stdout.write(`${label} ... `);
     try {
       const diagram = await resolveOne(client, args.model, args.maxTokens, record);
@@ -728,13 +765,22 @@ async function main(): Promise<void> {
       process.stdout.write(
         `OK (${diagram.players.length} players, ${diagram.actions.length} actions)\n`
       );
+      okCount++;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       process.stdout.write(`FAIL: ${msg}\n`);
+      failCount++;
+    }
+
+    // Gentle throttling between calls to stay comfortably below rate limits.
+    if (i < capped.length - 1) {
+      await new Promise((r) => setTimeout(r, 300));
     }
   }
 
-  process.stdout.write(`\nDone. Plan: ${PLAN_PATH}\n`);
+  process.stdout.write(
+    `\nDone. ${okCount} ok, ${failCount} failed, ${capped.length} total.\nPlan: ${PLAN_PATH}\n`
+  );
 }
 
 main().catch((err: unknown) => {
