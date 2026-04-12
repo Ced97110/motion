@@ -37,6 +37,7 @@ import {
   revalidateAllPlays,
   printRevalidateReport,
 } from "./revalidate-plays";
+import { extractDiagramPositionsRaw } from "../src/lib/court/diagram-positions";
 
 // --- Env loader (lightweight .env.local) ---------------------------------
 
@@ -206,6 +207,16 @@ the write_semantic_play tool. You DO NOT need to output SVG coordinates —
 players sit at named court positions and actions reference those names. A
 downstream translator computes coordinates deterministically.
 
+DIAGRAM-GROUNDED POSITIONS (when present):
+If the user message includes a DIAGRAM_POSITIONS block containing JSON with
+player x/y coordinates (extracted from the source book's court diagram), use
+those coordinates as GROUND TRUTH for starting positions. Map each x/y pair
+to the nearest canonical position from the vocabulary. The diagram reflects
+what the book actually depicts; prose descriptions are secondary when the
+diagram exists. If diagram positions and prose disagree, trust the diagram
+unless its note field explicitly says "reconstructed from prose" or
+"no diagram on this page".
+
 Action types:
   cut        { player, to, bias? }           — player moves to a named spot
   screen     { screener, cutter, at, cutter_to, bias? }
@@ -370,6 +381,11 @@ async function synthesizeOne(
   client: Anthropic,
   target: Target,
 ): Promise<{ play: unknown; semantic: SemanticPlay }> {
+  const diagramJson = extractDiagramPositionsRaw(target.body);
+  const diagramBlock = diagramJson
+    ? `\nDIAGRAM_POSITIONS (extracted from source book diagram — ground truth for starting coordinates):\n${diagramJson}\n`
+    : "";
+
   const response = await client.messages.create({
     model: MODEL,
     max_tokens: MAX_TOKENS,
@@ -381,7 +397,7 @@ async function synthesizeOne(
 Title: ${target.title}
 Category: ${target.category ?? "unknown"}
 Tags: ${target.tags.join(", ")}
-
+${diagramBlock}
 WIKI PAGE BODY:
 ${target.body.slice(0, 6000)}`,
       },
