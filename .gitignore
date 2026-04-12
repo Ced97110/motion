@@ -44,7 +44,13 @@ next-env.d.ts
 .cache/
 /test-results/
 /playwright-report/
+/scripts/.resynth-manifest.json
 
 # copyrighted source material — PDFs are NOT redistributable; wiki/*.md
 # derived content is versioned but raw PDFs stay local-only
 /knowledge-base/raw/
+
+# compounding-query-capture patch queue — per-coach query traffic stays
+# local; only the directory contract (README) is versioned.
+/knowledge-base/wiki/_pending/*
+!/knowledge-base/wiki/_pending/README.md
