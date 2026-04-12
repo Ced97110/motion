@@ -7,7 +7,13 @@ import { play_23Flare } from "./23-flare";
 import { play_32Lob } from "./32-lob";
 import { blob4LowFlex } from "./blob-4-low-flex";
 import { blobBelmontFlash } from "./blob-belmont-flash";
+import { blobBoxGate } from "./blob-box-gate";
+import { blobBoxGateUpdated } from "./blob-box-gate-updated";
 import { blobCross } from "./blob-cross";
+import { blobFlip } from "./blob-flip";
+import { blobFlipUpdated } from "./blob-flip-updated";
+import { blobStackManSpread } from "./blob-stack-man-spread";
+import { blobTwoInside } from "./blob-two-inside";
 import { weaksideFlareSlip } from "./weakside-flare-slip";
 
 export const PLAYS_BY_SLUG: Record<string, Play> = {
@@ -15,7 +21,13 @@ export const PLAYS_BY_SLUG: Record<string, Play> = {
   "32-lob": play_32Lob,
   "blob-4-low-flex": blob4LowFlex,
   "blob-belmont-flash": blobBelmontFlash,
+  "blob-box-gate": blobBoxGate,
+  "blob-box-gate-updated": blobBoxGateUpdated,
   "blob-cross": blobCross,
+  "blob-flip": blobFlip,
+  "blob-flip-updated": blobFlipUpdated,
+  "blob-stack-man-spread": blobStackManSpread,
+  "blob-two-inside": blobTwoInside,
   "weakside-flare-slip": weaksideFlareSlip,
 };
 

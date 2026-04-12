@@ -332,6 +332,7 @@ export const ${id}: Play = ${JSON.stringify(play, null, 2)};
 interface CliArgs {
   dryRun: boolean;
   single: string | null;
+  slugs: string[] | null;
   limit: number | null;
   /** When true, skip the Claude call and re-translate the existing semantic in src/data/plays/<slug>.ts. */
   fromSemantic: boolean;
@@ -341,6 +342,7 @@ function parseArgs(argv: string[]): CliArgs {
   const out: CliArgs = {
     dryRun: false,
     single: null,
+    slugs: null,
     limit: null,
     fromSemantic: false,
   };
@@ -348,7 +350,13 @@ function parseArgs(argv: string[]): CliArgs {
     const a = argv[i];
     if (a === "--dry-run") out.dryRun = true;
     else if (a === "--single") out.single = argv[++i] ?? null;
-    else if (a === "--limit") out.limit = parseInt(argv[++i] ?? "0", 10);
+    else if (a === "--slugs") {
+      const raw = argv[++i] ?? "";
+      out.slugs = raw
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+    } else if (a === "--limit") out.limit = parseInt(argv[++i] ?? "0", 10);
     else if (a === "--from-semantic") out.fromSemantic = true;
   }
   return out;
@@ -428,6 +436,24 @@ async function main() {
       console.error(`No type:play wiki page matches slug "${args.single}"`);
       process.exit(1);
     }
+  } else if (args.slugs && args.slugs.length > 0) {
+    // Preserve caller-provided ordering so priority lists translate to
+    // the actual synthesis order on disk.
+    const bySlug = new Map(targets.map((t) => [t.slug, t]));
+    const ordered: Target[] = [];
+    const missing: string[] = [];
+    for (const slug of args.slugs) {
+      const t = bySlug.get(slug);
+      if (t) ordered.push(t);
+      else missing.push(slug);
+    }
+    if (missing.length > 0) {
+      console.error(
+        `No type:play wiki page matches slug(s): ${missing.join(", ")}`,
+      );
+      if (ordered.length === 0) process.exit(1);
+    }
+    targets = ordered;
   }
   if (args.limit && args.limit > 0) targets = targets.slice(0, args.limit);
 
