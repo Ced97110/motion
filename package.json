@@ -15,6 +15,7 @@
     "synthesize:dry": "npx tsx scripts/synthesize-plays.ts --dry-run",
     "synthesize:revalidate": "npx tsx scripts/revalidate-plays.ts",
     "check:nba-terms": "npx tsx scripts/check-nba-terms.ts",
+    "lint:wiki": "npx tsx scripts/lint-wiki.ts",
     "test:visual": "playwright test",
     "test:visual:update": "playwright test --update-snapshots",
     "visual-audit:report": "npx tsx scripts/visual-audit-report.ts"
