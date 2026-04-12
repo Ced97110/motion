@@ -6,14 +6,30 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "ingest": "npx tsx scripts/ingest.ts",
+    "ingest:dry": "npx tsx scripts/ingest.ts --dry-run",
+    "extract-diagrams": "npx tsx scripts/extract-diagrams.ts",
+    "extract-diagrams:dry": "npx tsx scripts/extract-diagrams.ts --dry-run",
+    "synthesize": "npx tsx scripts/synthesize-plays.ts",
+    "synthesize:dry": "npx tsx scripts/synthesize-plays.ts --dry-run",
+    "synthesize:revalidate": "npx tsx scripts/revalidate-plays.ts",
+    "check:nba-terms": "npx tsx scripts/check-nba-terms.ts",
+    "test:visual": "playwright test",
+    "test:visual:update": "playwright test --update-snapshots",
+    "visual-audit:report": "npx tsx scripts/visual-audit-report.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.88.0",
+    "gray-matter": "^4.0.3",
+    "lucide-react": "^1.8.0",
     "next": "16.2.3",
+    "pdf-lib": "^1.17.1",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
