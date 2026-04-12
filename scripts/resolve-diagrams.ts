@@ -454,7 +454,29 @@ The ball-side in the diagram is the side the book shows — do NOT flip or mirro
 3. Keep positions within the viewBox. Use reasonable approximations — do not guess wildly.
 4. If a player is not visible in the diagram (e.g., the inbounder is cut off), omit them rather than inventing coordinates.
 5. If the diagram is unreadable, return an empty players array and explain in notes.
-6. Call emit_diagram_positions exactly once.`;
+6. Call emit_diagram_positions exactly once.
+
+## IP compliance (CRITICAL — your notes field is committed to git)
+
+Your \`notes\` string is committed to a public repository and scanned by a
+regression lint. Do NOT include any of the following:
+
+- NBA team names (Lakers, Celtics, Warriors, Heat, Magic, Bulls, etc.)
+- College/university program names (UCLA, Duke, Kentucky, Princeton, Villanova, Kansas, North Carolina, etc.)
+- Player first or last names (LeBron, Kareem, Michael Jordan, Kobe, Magic Johnson, Larry Bird, Curry, Durant, etc.)
+- Team-tied coach names
+
+When the book uses terms of art that embed institution names (e.g.
+"UCLA cut", "Princeton offense"), rephrase generically in your notes:
+
+  UCLA cut            → high-post basket cut / screen-away cut
+  Princeton offense   → continuity high-post offense
+  Triangle offense    → triangle offense (OK — generic system name)
+  Flex offense        → flex offense (OK — generic system name)
+  Pick-and-roll       → pick-and-roll (OK — generic action name)
+
+Author attribution (e.g., "Fig 7.1 from Coaches Playbook") is allowed.
+If you are unsure whether a term is safe, use the generic descriptor.`;
 }
 
 function buildUserPrompt(record: MarkerRecord): string {
