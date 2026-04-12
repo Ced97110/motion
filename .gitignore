@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# caches + ephemeral outputs
+.cache/
+/test-results/
+/playwright-report/
+
+# copyrighted source material — PDFs are NOT redistributable; wiki/*.md
+# derived content is versioned but raw PDFs stay local-only
+/knowledge-base/raw/
