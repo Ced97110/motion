@@ -191,7 +191,10 @@ const DIAGRAM_RE = /<!--\s*DIAGRAM:[^>]*-->/g;
 const CITATION_RE = /\[S\d+(?:[^\]]*?)\]/;
 // Matches a factual-looking claim: contains a digit, percent, a ratio (N-of-N), or a pp. range.
 const FACTUAL_LINE_RE = /\b(\d{1,3}(?:\.\d+)?%|\d+\s*[-–]\s*\d+|\d{2,}|\d+\s*of\s*\d+)\b/;
-const TITLE_CASE_RE = /\b(?:[A-Z][a-z]{2,}(?:\s+[A-Z][a-z]{2,}){1,3})\b/g;
+// Match TitleCase multi-word terms within a single line. `\s+` would cross
+// newlines and produce artefacts like "Objective\nDevelop" — restrict to
+// spaces and tabs only.
+const TITLE_CASE_RE = /\b(?:[A-Z][a-z]{2,}(?:[ \t]+[A-Z][a-z]{2,}){1,3})\b/g;
 const INDEX_LINK_RE = /\[[^\]]+\]\(([^)]+)\)/g;
 const FRONTMATTER_RE = /^---\n([\s\S]*?)\n---\n?/;
 const KEBAB_OK_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*\.md$/;
@@ -635,20 +638,45 @@ function checkGapConcepts(
       mentions.set(term, set);
     }
   }
-  // Known-noise prefixes/words from the corpus' narrative framing.
+  // Known-noise prefixes/words from the corpus' narrative framing. Includes
+  // every SCHEMA.md required section heading (those aren't gap concepts —
+  // they're the wiki's own required structure) plus common narrative framing.
   const noise = new Set([
+    // SCHEMA-required section headings (see knowledge-base/SCHEMA.md)
+    "Common Mistakes",
+    "Complex Variations",
+    "Concepts Taught",
+    "Coaching Cues",
+    "Coaching Points",
+    "Key Coaching",
+    "Key Coaching Points",
+    "Key Principles",
+    "Muscles Involved",
+    "Player Responsibilities",
+    "Related Concepts",
+    "Related Drills",
+    "Related Plays",
+    "Progressions",
+    "Sources",
+    "Notable Quotes",
+    "Overview",
+    "Objective",
+    "Setup",
+    "Execution",
+    "Formation",
+    "Phases",
+    "Counters",
+    "When To Use",
+    "Summary",
+    "Unique Contributions",
+    "Chapter Breakdown",
+    "Key Themes",
+    // Named systems / corpora (mentioned across many pages but are generic terms)
     "Motion Offense",
     "Triangle Offense",
     "Continuity Offense",
     "Coaches Playbook",
-    "Common Mistakes",
-    "Key Principles",
-    "Related Concepts",
-    "Related Plays",
-    "Coaching Points",
-    "Key Coaching",
-    "Sources",
-    "Overview",
+    "Basketball Anatomy",
   ]);
   for (const [term, pageSet] of mentions) {
     if (pageSet.size < GAP_MIN_PAGES) continue;
