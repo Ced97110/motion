@@ -45,6 +45,7 @@ next-env.d.ts
 /test-results/
 /playwright-report/
 /scripts/.resynth-manifest.json
+/scripts/.page-offsets.json
 
 # copyrighted source material — PDFs are NOT redistributable; wiki/*.md
 # derived content is versioned but raw PDFs stay local-only

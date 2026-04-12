@@ -1,18 +1,18 @@
 # Diagram Resolution Plan
 
-Generated: 2026-04-12T21:28:20.642Z
+Generated: 2026-04-12T22:12:19.931Z
 
 ## Marker Inventory
 
-- Total DIAGRAM markers: **345**
-- Resolvable (source + page known): **330**
+- Total DIAGRAM markers: **342**
+- Resolvable (source + page known): **327**
 - Unresolvable without manual help: **15**
 
 ## Distribution by Source
 
 | Source | Markers | PDF |
 |--------|---------|-----|
-| S7 | 149 | nba-coaches-playbook.pdf |
+| S7 | 146 | nba-coaches-playbook.pdf |
 | S4 | 58 | basketball-for-coaches.pdf |
 | S6 | 46 | footwork-balance-pivoting.pdf |
 | S8 | 38 | speed-agility-quickness.pdf |

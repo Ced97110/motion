@@ -71,6 +71,22 @@ const WIKI_DIR = path.resolve("knowledge-base/wiki");
 const RAW_DIR = path.resolve("knowledge-base/raw");
 const PLAN_PATH = path.resolve("docs/diagram-resolution-plan.md");
 const PLAYS_DIR = path.resolve("src/data/plays");
+const OFFSETS_PATH = path.resolve("scripts/.page-offsets.json");
+
+// Per-source printed-page-to-physical-page offsets (physical = printed + offset).
+// Loaded from scripts/.page-offsets.json at startup (populated by
+// scripts/detect-page-offsets.ts). Missing entries default to 0.
+let PAGE_OFFSETS: Record<string, number> = {};
+try {
+  if (fsSync.existsSync(OFFSETS_PATH)) {
+    const raw = fsSync.readFileSync(OFFSETS_PATH, "utf-8");
+    const parsed = JSON.parse(raw) as { offsets?: Record<string, number> };
+    PAGE_OFFSETS = parsed.offsets ?? {};
+  }
+} catch {
+  // Missing or malformed offsets file is non-fatal; default to zero offsets.
+  PAGE_OFFSETS = {};
+}
 
 const DEFAULT_MODEL = "claude-sonnet-4-6";
 const DEFAULT_MAX_TOKENS = 8192;
@@ -298,20 +314,27 @@ async function scanAllMarkers(): Promise<MarkerRecord[]> {
 
 async function extractPdfPagesAsBase64(
   pdfPath: string,
-  pages1Indexed: number[]
+  printedPages: number[],
+  sourceId: string
 ): Promise<string> {
   const buffer = await fs.readFile(pdfPath);
   const pdfBytes = new Uint8Array(buffer);
   const srcDoc = await PDFDocument.load(pdfBytes);
   const total = srcDoc.getPageCount();
 
-  const indices0 = pages1Indexed
-    .filter((p) => p >= 1 && p <= total)
-    .map((p) => p - 1);
+  // Convert printed page numbers to physical page indices using the per-source
+  // offset (physical = printed + offset). Citations in the wiki reference the
+  // book's printed page numbers; the PDF's physical index is shifted by front
+  // matter (cover, TOC, preface, acknowledgments).
+  const offset = PAGE_OFFSETS[sourceId] ?? 0;
+  const indices0 = printedPages
+    .map((p) => p + offset)
+    .filter((physical) => physical >= 1 && physical <= total)
+    .map((physical) => physical - 1);
 
   if (indices0.length === 0) {
     throw new Error(
-      `No valid pages in range (requested ${pages1Indexed.join(", ")}; PDF has ${total} pages)`
+      `No valid pages in range (requested printed ${printedPages.join(", ")} +offset ${offset}; PDF has ${total} pages)`
     );
   }
 
@@ -456,7 +479,7 @@ async function resolveOne(
   }
 
   const pdfPath = path.join(RAW_DIR, SOURCE_PDFS[record.sourceId]);
-  const base64 = await extractPdfPagesAsBase64(pdfPath, record.pages);
+  const base64 = await extractPdfPagesAsBase64(pdfPath, record.pages, record.sourceId);
 
   const response = await client.messages.create({
     model,
