@@ -12,8 +12,31 @@ import { blobBoxGateUpdated } from "./blob-box-gate-updated";
 import { blobCross } from "./blob-cross";
 import { blobFlip } from "./blob-flip";
 import { blobFlipUpdated } from "./blob-flip-updated";
+import { blobStackDouble } from "./blob-stack-double";
+import { blobStackMan } from "./blob-stack-man";
 import { blobStackManSpread } from "./blob-stack-man-spread";
 import { blobTwoInside } from "./blob-two-inside";
+import { blobTwoInsideUpdated } from "./blob-two-inside-updated";
+import { blobYoYo } from "./blob-yo-yo";
+import { blobYoYoUpdated } from "./blob-yo-yo-updated";
+import { playBackScreenPost } from "./play-back-screen-post";
+import { playBlack } from "./play-black";
+import { playBoxLoopPost } from "./play-box-loop-post";
+import { playDeceptionSlob } from "./play-deception-slob";
+import { playDiamondSlob } from "./play-diamond-slob";
+import { playDoubleCurls } from "./play-double-curls";
+import { playDriveHammer } from "./play-drive-hammer";
+import { playFlexWarrior } from "./play-flex-warrior";
+import { playHighPostDoubleScreen } from "./play-high-post-double-screen";
+import { playInsideIsolate } from "./play-inside-isolate";
+import { playIversonRam } from "./play-iverson-ram";
+import { playPickAndRollLayered } from "./play-pick-and-roll-layered";
+import { playPistonElevator } from "./play-piston-elevator";
+import { playProwlSlob } from "./play-prowl-slob";
+import { playReverseDribbleOptions } from "./play-reverse-dribble-options";
+import { playSideBlaze } from "./play-side-blaze";
+import { playSwinger } from "./play-swinger";
+import { slobX } from "./slob-x";
 import { weaksideFlareSlip } from "./weakside-flare-slip";
 
 export const PLAYS_BY_SLUG: Record<string, Play> = {
@@ -26,8 +49,31 @@ export const PLAYS_BY_SLUG: Record<string, Play> = {
   "blob-cross": blobCross,
   "blob-flip": blobFlip,
   "blob-flip-updated": blobFlipUpdated,
+  "blob-stack-double": blobStackDouble,
+  "blob-stack-man": blobStackMan,
   "blob-stack-man-spread": blobStackManSpread,
   "blob-two-inside": blobTwoInside,
+  "blob-two-inside-updated": blobTwoInsideUpdated,
+  "blob-yo-yo": blobYoYo,
+  "blob-yo-yo-updated": blobYoYoUpdated,
+  "play-back-screen-post": playBackScreenPost,
+  "play-black": playBlack,
+  "play-box-loop-post": playBoxLoopPost,
+  "play-deception-slob": playDeceptionSlob,
+  "play-diamond-slob": playDiamondSlob,
+  "play-double-curls": playDoubleCurls,
+  "play-drive-hammer": playDriveHammer,
+  "play-flex-warrior": playFlexWarrior,
+  "play-high-post-double-screen": playHighPostDoubleScreen,
+  "play-inside-isolate": playInsideIsolate,
+  "play-iverson-ram": playIversonRam,
+  "play-pick-and-roll-layered": playPickAndRollLayered,
+  "play-piston-elevator": playPistonElevator,
+  "play-prowl-slob": playProwlSlob,
+  "play-reverse-dribble-options": playReverseDribbleOptions,
+  "play-side-blaze": playSideBlaze,
+  "play-swinger": playSwinger,
+  "slob-x": slobX,
   "weakside-flare-slip": weaksideFlareSlip,
 };
 
