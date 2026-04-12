@@ -135,13 +135,58 @@ function makeIO(dryRun: boolean): PromoteIO {
   };
 }
 
-/** Wrap `lint-wiki.ts` if it exists; otherwise no-op. */
+/**
+ * Per-page promotion-time validator. Runs on a PROPOSED (slug, body) pair
+ * before it lands on disk — cheaper and more precise than spawning the
+ * full wiki-wide `lint-wiki.ts` for every patch.
+ *
+ * Covers the SCHEMA.md invariants that apply to a single page in isolation:
+ *   - kebab-case slug with no whitespace
+ *   - frontmatter present with required `type`
+ *   - body has at least one `## ` section heading
+ *   - non-trivial bodies cite at least one `[Sn, p.XX]` source
+ *
+ * Returns the first rejection reason found, or null if the page is clean.
+ * Whole-wiki checks (dead wikilinks, orphans, duplicate index entries) are
+ * deferred to the periodic `npm run lint:wiki` pass — those can only be
+ * judged in the context of the full graph.
+ */
 function maybeLint(): LintFn | undefined {
-  if (!fs.existsSync(LINT_SCRIPT)) return undefined;
-  // The scaffold does not invoke the lint subprocess directly — another
-  // workstream owns `lint-wiki.ts`. Skip here; production can wire this
-  // to spawn the lint CLI once it exists.
-  return undefined;
+  if (!fs.existsSync(LINT_SCRIPT)) {
+    // No linter on disk yet — return undefined so the promotion pipeline
+    // skips the lint gate entirely (safer than a silent pass).
+    return undefined;
+  }
+
+  const SLUG_RE = /^[a-z0-9][a-z0-9-]*$/;
+  const FRONTMATTER_TYPE_RE = /^---\n([\s\S]*?)\n---/;
+  const SECTION_HEADING_RE = /^## \S/m;
+  const CITATION_RE = /\[S\d+,?\s*pp?\.\s*\d+/;
+
+  return (slug: string, body: string): string | null => {
+    if (!SLUG_RE.test(slug)) {
+      return `slug violates kebab-case rule (got "${slug}")`;
+    }
+    const fmMatch = FRONTMATTER_TYPE_RE.exec(body);
+    if (!fmMatch) {
+      return "missing YAML frontmatter";
+    }
+    if (!/^\s*type:\s*\S+/m.test(fmMatch[1])) {
+      return "frontmatter missing `type:` field";
+    }
+    const afterFm = body.slice(fmMatch[0].length);
+    if (!SECTION_HEADING_RE.test(afterFm)) {
+      return "body has no `## ` section heading";
+    }
+    // Citation check — only enforce on non-trivial bodies (long enough to
+    // plausibly state a factual claim). Very short patches (e.g. a note
+    // under 200 chars) get a pass.
+    const stripped = afterFm.replace(/\s+/g, " ").trim();
+    if (stripped.length > 200 && !CITATION_RE.test(stripped)) {
+      return "body has no source citation in `[Sn, p.XX]` form";
+    }
+    return null;
+  };
 }
 
 function main(): void {
