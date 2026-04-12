@@ -46,6 +46,8 @@ next-env.d.ts
 /playwright-report/
 /scripts/.resynth-manifest.json
 /scripts/.page-offsets.json
+/scripts/.gap-concept-analysis.ts
+/scripts/.gap-concept-analysis.json
 
 # copyrighted source material — PDFs are NOT redistributable; wiki/*.md
 # derived content is versioned but raw PDFs stay local-only
