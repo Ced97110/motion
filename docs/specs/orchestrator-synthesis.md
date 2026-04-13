@@ -85,19 +85,19 @@ Every material decision made across the three specs, with owner.
 
 ---
 
-## 4. Open questions requiring Cédric (user)
+## 4. Open questions — RESOLVED 2026-04-12
 
-Decisions the subagents explicitly passed upward.
+All 5 recommendations accepted by Cédric.
 
-1. **Event-bus flip threshold.** Backend §6 + §11 both say "flip to Redis Streams at ~500 concurrent coaches." That's a guess; needs a load test. Acceptable to ship in-process and flip reactively when we see contention, OR commit to Redis Streams upfront if we want to avoid a later rewrite. **Recommendation**: ship in-process, instrument event-bus P95, set alarm at 200 concurrent-coach mark → gives ~1 month lead time for the swap.
+1. **Event-bus flip threshold** — ✅ ACCEPTED. Ship in-process, instrument event-bus P95, alarm at 200 concurrent-coach mark → ~1 month lead time for Redis Streams swap.
 
-2. **Default tier for new coaches on the coach-profile onboarding.** If quiz skipped: default to `beginner` (safest, progressive disclosure) or `intermediate` (doesn't insult experienced coaches who skipped)? The coach-profile spec says beginner; the designer's landing wants to honor advanced coaches. **Recommendation**: beginner default, but show a single-tap "I'm already a coach — skip to advanced" chip on first load.
+2. **Default tier for new coaches on skipped quiz** — ✅ ACCEPTED. Beginner default + single-tap "I'm already a coach — skip to advanced" chip on first load.
 
-3. **Live-game presence (multi-device)?** Backend spec is silent on "coach on iPad + assistant on phone tracking stats." Roadmap §1.1 assumes single-device. If multi-device is required at beta, WebSocket presence + CRDT-style merge on stat_line writes. Not trivial. **Recommendation**: defer to post-beta. Single-device for MVP.
+3. **Live-game multi-device presence** — ✅ DEFERRED. Single-device for MVP. WebSocket/CRDT work moves to post-beta backlog.
 
-4. **CV inference hosting at year-2 scale.** Mobile-side MediaPipe is phase-1. Phase-2 wants heavier models (pose estimation, play classification) that won't fit on-device. Modal / Replicate / self-hosted GPU on Render / edge TPUs — this is a $1,500–$5,000/month decision at year-3 scale. Not urgent; flag for year-1 review.
+4. **CV inference hosting at year-2 scale** — ✅ FLAGGED. Mobile-side MediaPipe for phase-1. Heavier model hosting ($1.5k–$5k/mo decision) revisited in year-1 review.
 
-5. **Landing page copy tone.** Designer §2 picks "AI coaches the coach." Legal + marketing review whether "coach" is trademarked in this context; positioning against Hudl names them explicitly in the draft. Before we ship: legal pass on the landing copy.
+5. **Landing page copy tone** — ✅ ACCEPTED pending legal. "AI coaches the coach" positioning kept; legal pass on Hudl/FastModel naming before ship.
 
 ---
 
