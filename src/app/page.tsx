@@ -15,6 +15,13 @@ import {
   MovementFive,
   MovementSix,
 } from "@/components/landing/LandingMovements";
+import Screen1GameDay from "@/components/landing/screens/Screen1GameDay";
+import Screen2Refusal from "@/components/landing/screens/Screen2Refusal";
+import ScreenPlaybook from "@/components/landing/screens/ScreenPlaybook";
+import Screen3Readers from "@/components/landing/screens/Screen3Readers";
+import Screen4Source from "@/components/landing/screens/Screen4Source";
+import Screen5Body from "@/components/landing/screens/Screen5Body";
+import Screen6Exit from "@/components/landing/screens/Screen6Exit";
 
 const MONO = "ui-monospace, SFMono-Regular, Menlo, monospace";
 
@@ -108,12 +115,33 @@ export default function Home() {
       >
         <div>
           <MovementOne />
+          <MobileScreenSlot>
+            <Screen1GameDay />
+          </MobileScreenSlot>
           <MovementTwo />
+          <MobileScreenSlot>
+            <Screen2Refusal />
+          </MobileScreenSlot>
           <MovementPlaybook />
+          <MobileScreenSlot>
+            <ScreenPlaybook active />
+          </MobileScreenSlot>
           <MovementThree role={role} onRoleHover={handleRoleHover} />
+          <MobileScreenSlot>
+            <Screen3Readers role={role} />
+          </MobileScreenSlot>
           <MovementFour />
+          <MobileScreenSlot>
+            <Screen4Source />
+          </MobileScreenSlot>
           <MovementFive />
+          <MobileScreenSlot>
+            <Screen5Body />
+          </MobileScreenSlot>
           <MovementSix />
+          <MobileScreenSlot>
+            <Screen6Exit />
+          </MobileScreenSlot>
         </div>
 
         <aside
@@ -179,31 +207,34 @@ export default function Home() {
       <style
         dangerouslySetInnerHTML={{
           __html: `
+            /* Mobile screen slots: hidden on desktop (screens live in the
+             * sticky aside), shown inline under each movement on mobile so
+             * every diagram actually appears in view as the user scrolls.
+             * Fixed height because the screens themselves use height:100%
+             * (see screens/shared.tsx screenShell). */
+            .mobile-screen-slot { display: none; }
+
             @media (max-width: 1023px) {
               .landing-grid {
                 grid-template-columns: 1fr !important;
-                gap: 40px !important;
+                gap: 32px !important;
                 padding: 0 24px !important;
               }
-              .landing-aside {
-                position: relative !important;
-                top: 0 !important;
-                /* Flex-center + overflow:hidden + height:auto collapses the
-                 * absolutely-positioned screen stack to 0 on mobile (flex-item
-                 * height:100% is indeterminate against an auto-height parent,
-                 * and overflow:hidden suppresses the min-height fallback),
-                 * which hides every SVG/diagram. Use a plain block box with a
-                 * real min-height on mobile so the stack renders. */
-                display: block !important;
-                overflow: visible !important;
-                height: auto !important;
-                min-height: 640px;
-                margin-bottom: 40px;
+              /* The sticky aside lives below all 7 movements in a collapsed
+               * single-column layout, so the IntersectionObserver has already
+               * advanced to stage 7 by the time it's visible — meaning only
+               * Screen6Exit would ever render. Hide it on mobile; inline
+               * slots below each movement take over. */
+              .landing-aside { display: none !important; }
+              .mobile-screen-slot {
+                display: block;
+                height: 560px;
+                margin: 8px 0 48px;
               }
             }
             @media (max-width: 768px) {
               .nav-links { display: none !important; }
-              .landing-aside { min-height: 560px; }
+              .mobile-screen-slot { height: 520px; margin: 8px 0 40px; }
             }
           `,
         }}
@@ -266,6 +297,15 @@ const navLink: CSSProperties = {
   color: "var(--paper-dim)",
   letterSpacing: "-0.005em",
 };
+
+/* ────────── Mobile screen slot ──────────
+ * Wraps a screen in a fixed-height box that is hidden on desktop (via the
+ * global .mobile-screen-slot rule in page CSS) and visible on <1024px. The
+ * fixed height is required because screens use height:100% for their shell
+ * (see screens/shared.tsx). */
+function MobileScreenSlot({ children }: { children: React.ReactNode }) {
+  return <div className="mobile-screen-slot">{children}</div>;
+}
 
 /* ────────────────────── Corner chips ────────────────────── */
 function CornerChip({
