@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Roboto, Inter } from "next/font/google";
+import { Roboto, DM_Sans } from "next/font/google";
 import "./globals.css";
 
 const roboto = Roboto({
@@ -9,9 +9,9 @@ const roboto = Roboto({
   display: "swap",
 });
 
-const inter = Inter({
+const dmSans = DM_Sans({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-body",
   display: "swap",
 });
@@ -30,7 +30,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${roboto.variable} ${inter.variable}`}
+      className={`${roboto.variable} ${dmSans.variable}`}
       suppressHydrationWarning
     >
       <head>

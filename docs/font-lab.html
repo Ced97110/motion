@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Motion · font lab · pick a body family</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Inter+Tight:wght@400;500;600;700;800&family=Geist:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&family=Figtree:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Albert+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=Instrument+Serif:ital@0;1&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600;6..72,700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --ink: #0a0a0b;
+    --paper: #f4f1ea;
+    --orange: #f97316;
+    --paper-dim: rgba(244, 241, 234, 0.58);
+    --citation: rgba(244, 241, 234, 0.42);
+    --rule: rgba(244, 241, 234, 0.10);
+    --signal: rgba(244, 241, 234, 0.05);
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; border-radius: 0; }
+  html, body {
+    background: var(--ink);
+    color: var(--paper);
+    font-family: "Inter", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* page chrome */
+  header.lab-head {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(10,10,11,0.94);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--rule);
+    padding: 14px 24px;
+    display: flex; justify-content: space-between; align-items: center;
+    font: 600 11px/1 var(--mono);
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--paper-dim);
+  }
+  header.lab-head b { color: var(--paper); font-weight: 700; }
+  header.lab-head .legend { font-weight: 500; color: var(--citation); }
+
+  main {
+    max-width: 1440px; margin: 0 auto;
+    padding: 48px 24px 120px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  /* font card */
+  .card {
+    border: 1px solid var(--rule);
+    background: rgba(244,241,234,0.015);
+    padding: 36px 32px;
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) minmax(0, 3fr);
+    gap: 32px;
+    align-items: start;
+  }
+  @media (max-width: 760px) {
+    .card { grid-template-columns: 1fr; padding: 28px 20px; }
+  }
+
+  /* meta column */
+  .meta { display: flex; flex-direction: column; gap: 12px; }
+  .meta .name { font: 700 22px/1.05 var(--card-family, "Inter"); letter-spacing: -0.02em; color: var(--paper); }
+  .meta .designer { font: 500 11px/1.4 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--citation); }
+  .meta .verdict { font: 400 13px/1.55 var(--card-family, "Inter"); color: var(--paper-dim); margin-top: 4px; }
+  .meta .props {
+    margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .meta .props span {
+    font: 500 9.5px/1 var(--mono);
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--citation);
+    padding: 4px 7px; border: 1px solid var(--rule);
+  }
+
+  /* sample column */
+  .sample { font-family: var(--card-family, "Inter"); display: flex; flex-direction: column; gap: 22px; }
+  .wm {
+    font-weight: 700;
+    font-size: clamp(56px, 7vw, 96px);
+    letter-spacing: var(--card-tracking, -0.034em);
+    line-height: 0.92;
+    color: var(--paper);
+  }
+  .h {
+    font-weight: 500;
+    font-size: clamp(20px, 2.4vw, 30px);
+    letter-spacing: -0.014em;
+    line-height: 1.18;
+    color: var(--paper);
+    max-width: 640px;
+  }
+  .body {
+    font-weight: 400;
+    font-size: 15.5px;
+    line-height: 1.62;
+    color: var(--paper-dim);
+    max-width: 580px;
+  }
+  .stats {
+    display: flex; gap: 28px;
+    padding-top: 18px; border-top: 1px solid var(--rule);
+    font-variant-numeric: tabular-nums;
+  }
+  .stat .num {
+    font-weight: 700;
+    font-size: 26px;
+    letter-spacing: -0.03em;
+    color: var(--paper);
+  }
+  .stat .lbl {
+    font: 500 9.5px/1 var(--mono);
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--citation);
+    margin-top: 6px;
+  }
+  .nav-mock {
+    display: inline-flex; gap: 28px; align-items: center;
+    padding: 12px 16px;
+    border: 1px solid var(--rule);
+    margin-top: 4px;
+    align-self: flex-start;
+  }
+  .nav-mock .brand { font-weight: 700; font-size: 18px; letter-spacing: -0.022em; }
+  .nav-mock a { font-weight: 500; font-size: 12.5px; color: var(--paper-dim); text-decoration: none; }
+  .nav-mock .cta { font-weight: 600; font-size: 12.5px; padding: 6px 12px; background: var(--paper); color: var(--ink); }
+
+  /* serif specific tweak */
+  .card[data-tone="serif"] .h { font-weight: 400; }
+  .card[data-tone="serif"] .h em { font-style: italic; color: var(--citation); }
+</style>
+</head>
+<body>
+
+<header class="lab-head">
+  <b>Motion · font lab</b>
+  <span class="legend">scroll · pick the one that reads right · then tell Claude</span>
+</header>
+
+<main>
+
+  <!-- 0 · INTER (current baseline) -->
+  <section class="card" style="--card-family: 'Inter';">
+    <div class="meta">
+      <div class="name">Inter</div>
+      <div class="designer">Rasmus Andersson · 2016 · Open Font License</div>
+      <div class="verdict">The current font. Reads &ldquo;tech-default.&rdquo; Cédric: not it.</div>
+      <div class="props"><span>baseline</span><span>free</span><span>geometric</span></div>
+    </div>
+    <div class="sample">
+      <div class="wm">Motion</div>
+      <div class="nav-mock">
+        <span class="brand">Motion</span>
+        <a>The plan</a><a>Playbook</a><a>Readers</a>
+        <span class="cta">Start for free</span>
+      </div>
+      <div class="h">A play is a decision animated into space and time.</div>
+      <p class="body">Motion is a coaching intelligence that has read the sport's literature and watches your season unfold, so that every time you open it, the next right move is already on the screen.</p>
+      <div class="stats">
+        <div class="stat"><div class="num">2,440</div><div class="lbl">pages compiled</div></div>
+        <div class="stat"><div class="num">934 → 4</div><div class="lbl">plays · chosen</div></div>
+        <div class="stat"><div class="num">0.91</div><div class="lbl">fidelity</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 1 · GEIST -->
+  <section class="card" style="--card-family: 'Geist'; --card-tracking: -0.038em;">
+    <div class="meta">
+      <div class="name">Geist</div>
+      <div class="designer">Vercel · 2024 · Open Font License (free)</div>
+      <div class="verdict">Vercel's house sans. Designed for product surfaces. Sharper, more confident than Inter. Reads &ldquo;contemporary instrument.&rdquo;</div>
+      <div class="props"><span>free</span><span>geometric</span><span>recommended</span></div>
+    </div>
+    <div class="sample">
+      <div class="wm">Motion</div>
+      <div class="nav-mock">
+        <span class="brand">Motion</span>
+        <a>The plan</a><a>Playbook</a><a>Readers</a>
+        <span class="cta">Start for free</span>
+      </div>
+      <div class="h">A play is a decision animated into space and time.</div>
+      <p class="body">Motion is a coaching intelligence that has read the sport's literature and watches your season unfold, so that every time you open it, the next right move is already on the screen.</p>
+      <div class="stats">
+        <div class="stat"><div class="num">2,440</div><div class="lbl">pages compiled</div></div>
+        <div class="stat"><div class="num">934 → 4</div><div class="lbl">plays · chosen</div></div>
+        <div class="stat"><div class="num">0.91</div><div class="lbl">fidelity</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 · MANROPE -->
+  <section class="card" style="--card-family: 'Manrope'; --card-tracking: -0.030em;">
+    <div class="meta">
+      <div class="name">Manrope</div>
+      <div class="designer">Mikhail Sharanda · 2018 · Open Font License (free)</div>
+      <div class="verdict">Geometric grotesque, slightly warmer than Inter. Distinctive lowercase 'a' and 'g'. Easy swap.</div>
+      <div class="props"><span>free</span><span>warm-grotesque</span></div>
+    </div>
+    <div class="sample">
+      <div class="wm">Motion</div>
+      <div class="nav-mock">
+        <span class="brand">Motion</span>
+        <a>The plan</a><a>Playbook</a><a>Readers</a>
+        <span class="cta">Start for free</span>
+      </div>
+      <div class="h">A play is a decision animated into space and time.</div>
+      <p class="body">Motion is a coaching intelligence that has read the sport's literature and watches your season unfold, so that every time you open it, the next right move is already on the screen.</p>
+      <div class="stats">
+        <div class="stat"><div class="num">2,440</div><div class="lbl">pages compiled</div></div>
+        <div class="stat"><div class="num">934 → 4</div><div class="lbl">plays · chosen</div></div>
+        <div class="stat"><div class="num">0.91</div><div class="lbl">fidelity</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 · HANKEN GROTESK -->
+  <section class="card" style="--card-family: 'Hanken Grotesk'; --card-tracking: -0.028em;">
+    <div class="meta">
+      <div class="name">Hanken Grotesk</div>
+      <div class="designer">Alfredo Marco Pradil · 2018 · Open Font License (free)</div>
+      <div class="verdict">Modern grotesque, generous spacing. Reads prestige-publishing without going stiff.</div>
+      <div class="props"><span>free</span><span>grotesque</span><span>airy</span></div>
+    </div>
+    <div class="sample">
+      <div class="wm">Motion</div>
+      <div class="nav-mock">
+        <span class="brand">Motion</span>
+        <a>The plan</a><a>Playbook</a><a>Readers</a>
+        <span class="cta">Start for free</span>
+      </div>
+      <div class="h">A play is a decision animated into space and time.</div>
+      <p class="body">Motion is a coaching intelligence that has read the sport's literature and watches your season unfold, so that every time you open it, the next right move is already on the screen.</p>
+      <div class="stats">
+        <div class="stat"><div class="num">2,440</div><div class="lbl">pages compiled</div></div>
+        <div class="stat"><div class="num">934 → 4</div><div class="lbl">plays · chosen</div></div>
+        <div class="stat"><div class="num">0.91</div><div class="lbl">fidelity</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 · INTER TIGHT -->
+  <section class="card" style="--card-family: 'Inter Tight'; --card-tracking: -0.040em;">
+    <div class="meta">
+      <div class="name">Inter Tight</div>
+      <div class="designer">Rasmus Andersson · 2022 · Open Font License (free)</div>
+      <div class="verdict">Same family as Inter, condensed cut. Letters narrower, more confident. Worth a look if you only dislike Inter's width.</div>
+      <div class="props"><span>free</span><span>condensed</span></div>
+    </div>
+    <div class="sample">
+      <div class="wm">Motion</div>
+      <div class="nav-mock">
+        <span class="brand">Motion</span>
+        <a>The plan</a><a>Playbook</a><a>Readers</a>
+        <span class="cta">Start for free</span>
+      </div>
+      <div class="h">A play is a decision animated into space and time.</div>
+      <p class="body">Motion is a coaching intelligence that has read the sport's literature and watches your season unfold, so that every time you open it, the next right move is already on the screen.</p>
+      <div class="stats">
+        <div class="stat"><div class="num">2,440</div><div class="lbl">pages compiled</div></div>
+        <div class="stat"><div class="num">934 → 4</div><div class="lbl">plays · chosen</div></div>
+        <div class="stat"><div class="num">0.91</div><div class="lbl">fidelity</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 · PLUS JAKARTA SANS -->
+  <section class="card" style="--card-family: 'Plus Jakarta Sans'; --card-tracking: -0.024em;">
+    <div class="meta">
+      <div class="name">Plus Jakarta Sans</div>
+      <div class="designer">Tokotype · 2020 · Open Font License (free)</div>
+      <div class="verdict">Humanist sans, more character in the lowercase. Reads modern + slightly editorial.</div>
+      <div class="props"><span>free</span><span>humanist</span></div>
+    </div>
+    <div class="sample">
+      <div class="wm">Motion</div>
+      <div class="nav-mock">
+        <span class="brand">Motion</span>
+        <a>The plan</a><a>Playbook</a><a>Readers</a>
+        <span class="cta">Start for free</span>
+      </div>
+      <div class="h">A play is a decision animated into space and time.</div>
+      <p class="body">Motion is a coaching intelligence that has read the sport's literature and watches your season unfold, so that every time you open it, the next right move is already on the screen.</p>
+      <div class="stats">
+        <div class="stat"><div class="num">2,440</div><div class="lbl">pages compiled</div></div>
+        <div class="stat"><div class="num">934 → 4</div><div class="lbl">plays · chosen</div></div>
+        <div class="stat"><div class="num">0.91</div><div class="lbl">fidelity</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 · DM SANS -->
+  <section class="card" style="--card-family: 'DM Sans'; --card-tracking: -0.025em;">
+    <div class="meta">
+      <div class="name">DM Sans</div>
+      <div class="designer">Colophon Foundry · 2019 · Open Font License (free)</div>
+      <div class="verdict">Slightly squared, very neutral. Less personality than Geist, more presence than Inter.</div>
+      <div class="props"><span>free</span><span>neutral</span></div>
+    </div>
+    <div class="sample">
+      <div class="wm">Motion</div>
+      <div class="nav-mock">
+        <span class="brand">Motion</span>
+        <a>The plan</a><a>Playbook</a><a>Readers</a>
+        <span class="cta">Start for free</span>
+      </div>
+      <div class="h">A play is a decision animated into space and time.</div>
+      <p class="body">Motion is a coaching intelligence that has read the sport's literature and watches your season unfold, so that every time you open it, the next right move is already on the screen.</p>
+      <div class="stats">
+        <div class="stat"><div class="num">2,440</div><div class="lbl">pages compiled</div></div>
+        <div class="stat"><div class="num">934 → 4</div><div class="lbl">plays · chosen</div></div>
+        <div class="stat"><div class="num">0.91</div><div class="lbl">fidelity</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 · FIGTREE -->
+  <section class="card" style="--card-family: 'Figtree'; --card-tracking: -0.026em;">
+    <div class="meta">
+      <div class="name">Figtree</div>
+      <div class="designer">Erik D. Kennedy · 2022 · Open Font License (free)</div>
+      <div class="verdict">Soft humanist sans. Approachable, friendly without going startup-cute.</div>
+      <div class="props"><span>free</span><span>humanist</span><span>soft</span></div>
+    </div>
+    <div class="sample">
+      <div class="wm">Motion</div>
+      <div class="nav-mock">
+        <span class="brand">Motion</span>
+        <a>The plan</a><a>Playbook</a><a>Readers</a>
+        <span class="cta">Start for free</span>
+      </div>
+      <div class="h">A play is a decision animated into space and time.</div>
+      <p class="body">Motion is a coaching intelligence that has read the sport's literature and watches your season unfold, so that every time you open it, the next right move is already on the screen.</p>
+      <div class="stats">
+        <div class="stat"><div class="num">2,440</div><div class="lbl">pages compiled</div></div>
+        <div class="stat"><div class="num">934 → 4</div><div class="lbl">plays · chosen</div></div>
+        <div class="stat"><div class="num">0.91</div><div class="lbl">fidelity</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 · SPACE GROTESK -->
+  <section class="card" style="--card-family: 'Space Grotesk'; --card-tracking: -0.024em;">
+    <div class="meta">
+      <div class="name">Space Grotesk</div>
+      <div class="designer">Florian Karsten · 2018 · Open Font License (free)</div>
+      <div class="verdict">Quirky lowercase 'a' and 'g'. Technical voice. Used by Replit, Linear (earlier), some prestige tech.</div>
+      <div class="props"><span>free</span><span>distinctive</span><span>technical</span></div>
+    </div>
+    <div class="sample">
+      <div class="wm">Motion</div>
+      <div class="nav-mock">
+        <span class="brand">Motion</span>
+        <a>The plan</a><a>Playbook</a><a>Readers</a>
+        <span class="cta">Start for free</span>
+      </div>
+      <div class="h">A play is a decision animated into space and time.</div>
+      <p class="body">Motion is a coaching intelligence that has read the sport's literature and watches your season unfold, so that every time you open it, the next right move is already on the screen.</p>
+      <div class="stats">
+        <div class="stat"><div class="num">2,440</div><div class="lbl">pages compiled</div></div>
+        <div class="stat"><div class="num">934 → 4</div><div class="lbl">plays · chosen</div></div>
+        <div class="stat"><div class="num">0.91</div><div class="lbl">fidelity</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 · BRICOLAGE GROTESQUE -->
+  <section class="card" style="--card-family: 'Bricolage Grotesque'; --card-tracking: -0.028em;">
+    <div class="meta">
+      <div class="name">Bricolage Grotesque</div>
+      <div class="designer">Mathieu Triay · 2022 · Open Font License (free)</div>
+      <div class="verdict">Variable font with width + grade axes. Distinctive contemporary publishing register. Maximum personality.</div>
+      <div class="props"><span>free</span><span>variable</span><span>editorial</span></div>
+    </div>
+    <div class="sample">
+      <div class="wm">Motion</div>
+      <div class="nav-mock">
+        <span class="brand">Motion</span>
+        <a>The plan</a><a>Playbook</a><a>Readers</a>
+        <span class="cta">Start for free</span>
+      </div>
+      <div class="h">A play is a decision animated into space and time.</div>
+      <p class="body">Motion is a coaching intelligence that has read the sport's literature and watches your season unfold, so that every time you open it, the next right move is already on the screen.</p>
+      <div class="stats">
+        <div class="stat"><div class="num">2,440</div><div class="lbl">pages compiled</div></div>
+        <div class="stat"><div class="num">934 → 4</div><div class="lbl">plays · chosen</div></div>
+        <div class="stat"><div class="num">0.91</div><div class="lbl">fidelity</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 · ALBERT SANS -->
+  <section class="card" style="--card-family: 'Albert Sans'; --card-tracking: -0.026em;">
+    <div class="meta">
+      <div class="name">Albert Sans</div>
+      <div class="designer">Iconian Fonts · 2022 · Open Font License (free)</div>
+      <div class="verdict">Variable, fashion-magazine adjacent. Elegant proportions. More refined than Inter.</div>
+      <div class="props"><span>free</span><span>variable</span><span>elegant</span></div>
+    </div>
+    <div class="sample">
+      <div class="wm">Motion</div>
+      <div class="nav-mock">
+        <span class="brand">Motion</span>
+        <a>The plan</a><a>Playbook</a><a>Readers</a>
+        <span class="cta">Start for free</span>
+      </div>
+      <div class="h">A play is a decision animated into space and time.</div>
+      <p class="body">Motion is a coaching intelligence that has read the sport's literature and watches your season unfold, so that every time you open it, the next right move is already on the screen.</p>
+      <div class="stats">
+        <div class="stat"><div class="num">2,440</div><div class="lbl">pages compiled</div></div>
+        <div class="stat"><div class="num">934 → 4</div><div class="lbl">plays · chosen</div></div>
+        <div class="stat"><div class="num">0.91</div><div class="lbl">fidelity</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 · FRAUNCES (serif) -->
+  <section class="card" data-tone="serif" style="--card-family: 'Fraunces'; --card-tracking: -0.028em;">
+    <div class="meta">
+      <div class="name" style="font-family: 'Fraunces';">Fraunces <em>(serif)</em></div>
+      <div class="designer">Undercase Type · 2020 · Open Font License (free)</div>
+      <div class="verdict">Variable serif with optical sizing. Editorial, distinctive. Big tone shift from sans — Monocle / Aesop register.</div>
+      <div class="props"><span>free</span><span>serif</span><span>variable</span><span>editorial</span></div>
+    </div>
+    <div class="sample">
+      <div class="wm">Motion</div>
+      <div class="nav-mock">
+        <span class="brand">Motion</span>
+        <a>The plan</a><a>Playbook</a><a>Readers</a>
+        <span class="cta">Start for free</span>
+      </div>
+      <div class="h">A play is a decision <em>animated into space and time.</em></div>
+      <p class="body">Motion is a coaching intelligence that has read the sport's literature and watches your season unfold, so that every time you open it, the next right move is already on the screen.</p>
+      <div class="stats">
+        <div class="stat"><div class="num">2,440</div><div class="lbl">pages compiled</div></div>
+        <div class="stat"><div class="num">934 → 4</div><div class="lbl">plays · chosen</div></div>
+        <div class="stat"><div class="num">0.91</div><div class="lbl">fidelity</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12 · INSTRUMENT SERIF -->
+  <section class="card" data-tone="serif" style="--card-family: 'Instrument Serif'; --card-tracking: -0.020em;">
+    <div class="meta">
+      <div class="name" style="font-family: 'Instrument Serif';">Instrument Serif <em>(serif)</em></div>
+      <div class="designer">Instrument · 2022 · Open Font License (free)</div>
+      <div class="verdict">Display serif with ligatures. Very Monocle. Pair with a sans for body if chosen.</div>
+      <div class="props"><span>free</span><span>display-serif</span></div>
+    </div>
+    <div class="sample">
+      <div class="wm">Motion</div>
+      <div class="nav-mock">
+        <span class="brand">Motion</span>
+        <a>The plan</a><a>Playbook</a><a>Readers</a>
+        <span class="cta">Start for free</span>
+      </div>
+      <div class="h">A play is a decision <em>animated into space and time.</em></div>
+      <p class="body" style="font-family: 'Newsreader';">Motion is a coaching intelligence that has read the sport's literature and watches your season unfold, so that every time you open it, the next right move is already on the screen. <span style="color:var(--citation); font: 500 11px/1.4 var(--mono); display:block; margin-top:8px; letter-spacing:0.1em; text-transform:uppercase;">body shown in Newsreader · pair candidate</span></p>
+      <div class="stats">
+        <div class="stat"><div class="num">2,440</div><div class="lbl">pages compiled</div></div>
+        <div class="stat"><div class="num">934 → 4</div><div class="lbl">plays · chosen</div></div>
+        <div class="stat"><div class="num">0.91</div><div class="lbl">fidelity</div></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+  // tiny anchor: clicking a card name copies its identifier so it's easy
+  // to tell Claude which one to wire up
+  document.querySelectorAll('.card').forEach((card, i) => {
+    card.addEventListener('dblclick', () => {
+      const name = card.querySelector('.name').textContent.trim();
+      navigator.clipboard?.writeText(name).catch(() => {});
+      const original = card.style.borderColor;
+      card.style.borderColor = '#f97316';
+      setTimeout(() => { card.style.borderColor = original; }, 600);
+    });
+  });
+</script>
+
+</body>
+</html>

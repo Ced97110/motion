@@ -10,16 +10,16 @@ interface WordmarkProps {
 }
 
 const SIZE_STYLES: Record<WordmarkSize, CSSProperties> = {
-  navSm: { fontSize: 15, letterSpacing: "-0.022em" },
-  nav: { fontSize: 19, letterSpacing: "-0.024em" },
-  h1: { fontSize: 44, letterSpacing: "-0.028em" },
-  hero: { fontSize: "clamp(88px, 11vw, 144px)", letterSpacing: "-0.034em" },
-  footer: { fontSize: 13, letterSpacing: "-0.018em" },
+  navSm: { fontSize: 15, letterSpacing: "-0.025em" },
+  nav: { fontSize: 19, letterSpacing: "-0.027em" },
+  h1: { fontSize: 44, letterSpacing: "-0.030em" },
+  hero: { fontSize: "clamp(88px, 11vw, 144px)", letterSpacing: "-0.036em" },
+  footer: { fontSize: 13, letterSpacing: "-0.020em" },
 };
 
 /**
  * Motion wordmark — sport-agnostic brand mark.
- * Inter 700, title case, inherits color via currentColor.
+ * DM Sans 700, title case, inherits color via currentColor.
  */
 export default function Wordmark({
   size = "nav",
