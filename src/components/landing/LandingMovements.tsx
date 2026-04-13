@@ -146,7 +146,75 @@ export function MovementTwo() {
   );
 }
 
-/* ─────────── 3 · Three readers ─────────── */
+/* ─────────── 3 · The playbook ─────────── */
+export function MovementPlaybook() {
+  return (
+    <Shell
+      id="m3"
+      num="Movement 03 · The playbook"
+      title={<>A play is a decision animated into space and time.</>}
+      body={
+        <>
+          Every play in Motion is a vector diagram. Three phases. Six layers.
+          Player paths drawn as Bézier curves. The animation is the teaching
+          — you see the spacing, the read, and the counter before you read a
+          word of coaching text.
+        </>
+      }
+    >
+      <div
+        style={{
+          marginTop: 28,
+          display: "grid",
+          gridTemplateColumns: "auto 1fr",
+          gap: "6px 20px",
+          fontFamily: MONO,
+          fontSize: 12,
+          maxWidth: 440,
+        }}
+      >
+        <Spec label="Play" value="23-Flare" />
+        <Spec label="Alignment" value="vs. 2-3 zone" />
+        <Spec label="Intent" value="Open three for the best shooter" />
+        <Spec label="Phases" value="3" />
+        <Spec label="Source" value="Motion wiki · 2,440 pp compiled" />
+      </div>
+    </Shell>
+  );
+}
+
+function Spec({ label, value }: { label: string; value: string }) {
+  return (
+    <>
+      <span
+        style={{
+          fontFamily: MONO,
+          fontSize: 10,
+          letterSpacing: "0.16em",
+          textTransform: "uppercase",
+          color: "var(--citation)",
+          paddingTop: 2,
+        }}
+      >
+        {label}
+      </span>
+      <span
+        style={{
+          fontFamily: "var(--font-body)",
+          fontSize: 14,
+          color: "var(--fg)",
+          fontVariantNumeric: "tabular-nums",
+          borderBottom: "1px dotted var(--rule)",
+          paddingBottom: 6,
+        }}
+      >
+        {value}
+      </span>
+    </>
+  );
+}
+
+/* ─────────── 4 · Three readers ─────────── */
 export function MovementThree({
   role,
   onRoleHover,
@@ -174,8 +242,8 @@ export function MovementThree({
 
   return (
     <Shell
-      id="m3"
-      num="Movement 03 · The three readers"
+      id="m4"
+      num="Movement 04 · The three readers"
       title={<>The same system. Three assemblies. You will recognize yours.</>}
       body={
         <>
@@ -245,8 +313,8 @@ export function MovementThree({
 export function MovementFour() {
   return (
     <Shell
-      id="m4"
-      num="Movement 04 · The source"
+      id="m5"
+      num="Movement 05 · The source"
       title={<>Every answer traces back to a page you can read.</>}
       body={
         <>
@@ -294,8 +362,8 @@ export function MovementFour() {
 export function MovementFive() {
   return (
     <Shell
-      id="m5"
-      num="Movement 05 · The body in the system"
+      id="m6"
+      num="Movement 06 · The body in the system"
       title={<>The shot, the quad, the sleep, the lapse in the third quarter. One system reads them all.</>}
       body={
         <>
@@ -315,8 +383,8 @@ export function MovementSix() {
   const [hover, setHover] = useState(false);
   return (
     <section
-      id="m6"
-      data-movement="m6"
+      id="m7"
+      data-movement="m7"
       style={{
         minHeight: "100vh",
         padding: "120px 0 120px",
@@ -325,7 +393,7 @@ export function MovementSix() {
         justifyContent: "center",
       }}
     >
-      <div style={numStyle}>Movement 06 · The invitation</div>
+      <div style={numStyle}>Movement 07 · The invitation</div>
       <div
         style={{
           fontFamily: DISPLAY,

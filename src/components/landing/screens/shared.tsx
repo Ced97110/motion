@@ -5,7 +5,7 @@ import type { CSSProperties } from "react";
 export const MONO =
   "ui-monospace, SFMono-Regular, Menlo, monospace";
 
-export type DemoStage = 1 | 2 | 3 | 4 | 5 | 6;
+export type DemoStage = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 export type ReaderRole = "coach" | "player" | "student";
 
 export const screenShell: CSSProperties = {

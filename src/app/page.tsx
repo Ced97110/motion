@@ -9,12 +9,12 @@ import LandingScreenStack, {
 import {
   MovementOne,
   MovementTwo,
+  MovementPlaybook,
   MovementThree,
   MovementFour,
   MovementFive,
   MovementSix,
 } from "@/components/landing/LandingMovements";
-import PlaybookShowcase from "@/components/landing/PlaybookShowcase";
 
 const MONO = "ui-monospace, SFMono-Regular, Menlo, monospace";
 
@@ -57,7 +57,7 @@ export default function Home() {
           const id = visible[0].target.getAttribute("data-movement");
           if (id) {
             const n = parseInt(id.replace("m", ""), 10);
-            if (n >= 1 && n <= 6) setStage(n as DemoStage);
+            if (n >= 1 && n <= 7) setStage(n as DemoStage);
           }
         }
       },
@@ -109,6 +109,7 @@ export default function Home() {
         <div>
           <MovementOne />
           <MovementTwo />
+          <MovementPlaybook />
           <MovementThree role={role} onRoleHover={handleRoleHover} />
           <MovementFour />
           <MovementFive />
@@ -130,8 +131,6 @@ export default function Home() {
           <LandingScreenStack stage={stage} role={role} />
         </aside>
       </main>
-
-      <PlaybookShowcase />
 
       <footer
         style={{
@@ -233,12 +232,15 @@ function TopNav() {
             The plan
           </a>
           <a href="#m3" style={navLink}>
-            Three readers
+            Playbook
           </a>
           <a href="#m4" style={navLink}>
-            The source
+            Readers
           </a>
-          <a href="#m6" style={navLink}>
+          <a href="#m5" style={navLink}>
+            Source
+          </a>
+          <a href="#m7" style={navLink}>
             Access
           </a>
         </div>
