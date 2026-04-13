@@ -2,7 +2,24 @@ import fs from "fs";
 import path from "path";
 import matter from "gray-matter";
 
-const WIKI_DIR = path.join(process.cwd(), "knowledge-base", "wiki");
+// Wiki content lives in the backend repo (../backend/knowledge-base/wiki) as
+// of the FE/BE split. In dev, the FE resolves it via a sibling-dir fallback.
+// In production builds where the backend is not co-located, set
+// MOTION_WIKI_DIR to an absolute path, or pre-build wiki data into a JSON
+// artifact that this loader consumes.
+function resolveWikiDir(): string {
+  if (process.env.MOTION_WIKI_DIR) return process.env.MOTION_WIKI_DIR;
+  const candidates = [
+    path.join(process.cwd(), "knowledge-base", "wiki"),
+    path.join(process.cwd(), "..", "backend", "knowledge-base", "wiki"),
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  return candidates[0];
+}
+
+const WIKI_DIR = resolveWikiDir();
 
 export interface WikiPageMeta {
   slug: string;
