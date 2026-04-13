@@ -1,10 +1,25 @@
 import type { Metadata } from "next";
+import { Roboto, Inter } from "next/font/google";
 import "./globals.css";
 
+const roboto = Roboto({
+  subsets: ["latin"],
+  weight: ["700"],
+  variable: "--font-court",
+  display: "swap",
+});
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-body",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "Motion — AI-Powered Basketball Coaching",
+  title: "Motion — Coaching Intelligence",
   description:
-    "Animated play diagrams, interactive defense simulators, and AI game plan generation.",
+    "A coaching intelligence that has read the sport's literature and watches your season unfold. The next right move is already on the screen.",
 };
 
 export default function RootLayout({
@@ -13,11 +28,27 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html
+      lang="en"
+      className={`${roboto.variable} ${inter.variable}`}
+      suppressHydrationWarning
+    >
       <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap"
-          rel="stylesheet"
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var stored = localStorage.getItem('motion-theme');
+                  var mql = window.matchMedia('(prefers-color-scheme: light)');
+                  var theme = stored || (mql.matches ? 'light' : 'dark');
+                  document.documentElement.setAttribute('data-theme', theme);
+                } catch (e) {
+                  document.documentElement.setAttribute('data-theme', 'dark');
+                }
+              })();
+            `,
+          }}
         />
       </head>
       <body>{children}</body>

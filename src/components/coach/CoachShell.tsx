@@ -5,6 +5,7 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
+import Wordmark from "@/components/brand/Wordmark";
 import {
   ACCENT,
   BG_PAGE,
@@ -71,15 +72,9 @@ export function CoachShell({
       >
         <Link
           href="/"
-          style={{
-            color: TEXT_PRIMARY,
-            textDecoration: "none",
-            fontSize: 13,
-            fontWeight: 700,
-            letterSpacing: 2,
-          }}
+          style={{ color: TEXT_PRIMARY, textDecoration: "none" }}
         >
-          MOTION
+          <Wordmark size="navSm" />
         </Link>
         <span style={{ color: TEXT_DIM }}>·</span>
         <div style={{ display: "flex", gap: 1 }}>

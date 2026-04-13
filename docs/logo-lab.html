@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>motion · wordmark · League Spartan Bold</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --bg2: #070708;
+    --ink: #fafafa;
+    --mute: #6b6b6b;
+    --mute-2: #a8a8a5;
+    --rule: #1c1c1e;
+    --orange: #f97316;
+    --display: "League Spartan", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--ink); }
+  body {
+    font-family: var(--display);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    padding: 64px 48px 160px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* ───────── chrome ───────── */
+  header { border-bottom: 1px solid var(--rule); padding-bottom: 28px; margin-bottom: 56px; }
+  .kicker { font: 600 11px/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--mute); }
+  h1 { font: 700 24px/1.15 var(--display); letter-spacing: -.015em; margin-top: 10px; }
+  h1 em { color: var(--mute); font-style: normal; font-weight: 500; }
+
+  section { margin: 80px 0; }
+  .section-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 36px; border-top: 1px solid var(--rule); padding-top: 28px; }
+  .section-head .num { font: 600 11px/1 var(--mono); color: var(--mute); letter-spacing: .1em; }
+  .section-head h2 { font: 700 12px/1 var(--display); letter-spacing: .08em; text-transform: uppercase; }
+  .section-head .note { margin-left: auto; font: 400 12px/1.55 var(--display); color: var(--mute); max-width: 560px; text-align: right; }
+
+  /* ───────── the wordmark ─────────
+     League Spartan has wide counters and geometric forms.
+     At display scale, bold 700 with negative tracking feels right.
+     Title case (capital M + lowercase) anchors the word and feels intentional —
+     neither shouty caps (Overtime, AND1) nor over-casual all-lowercase (figma, stripe). */
+  .wm {
+    font-family: var(--display);
+    font-weight: 700;
+    letter-spacing: -.04em;    /* Title case needs slightly less negative tracking than all-lowercase */
+    line-height: .88;
+    font-variant-ligatures: none;
+    color: var(--ink);
+  }
+  .wm-black { font-weight: 900; letter-spacing: -.055em; }
+  .wm-uc    { text-transform: uppercase; letter-spacing: -.015em; }  /* UC needs less negative tracking */
+  .wm-accent-dot::after { content: "."; color: var(--orange); }
+
+  /* ───────── hero canvas ───────── */
+  .canvas {
+    background: var(--bg2);
+    border: 1px solid var(--rule);
+    padding: 72px 56px;
+    position: relative;
+  }
+  .canvas .corner {
+    position: absolute; top: 14px; left: 14px;
+    font: 600 10px/1 var(--mono); color: var(--mute); letter-spacing: .12em; text-transform: uppercase;
+  }
+  .canvas .corner-r { left: auto; right: 14px; }
+
+  /* ───────── scale ladder ───────── */
+  .ladder { display: flex; flex-direction: column; gap: 28px; align-items: flex-start; }
+  .ladder-row { display: flex; align-items: baseline; gap: 32px; width: 100%; }
+  .ladder-meta {
+    font: 500 11px/1.4 var(--mono); color: var(--mute);
+    min-width: 120px; letter-spacing: .04em;
+  }
+  .ladder-meta b { color: var(--mute-2); font-weight: 600; }
+
+  /* ───────── nav mock ───────── */
+  .nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 28px; border: 1px solid var(--rule); background: var(--bg2);
+  }
+  .nav-wm { font: 700 22px/1 var(--display); letter-spacing: -.045em; }
+  .nav-links { display: flex; gap: 32px; font: 500 14px/1 var(--display); letter-spacing: 0; color: var(--mute-2); }
+  .nav-links a { color: var(--mute-2); text-decoration: none; }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-cta {
+    font: 700 13px/1 var(--display); letter-spacing: -.01em;
+    padding: 12px 16px; background: var(--orange); color: #0a0a0b; border: 0; cursor: pointer;
+  }
+
+  /* ───────── color treatments ───────── */
+  .swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; background: var(--rule); border: 1px solid var(--rule); }
+  .sw { padding: 48px 28px; display: flex; flex-direction: column; justify-content: space-between; min-height: 220px; }
+  .sw .label { font: 600 10px/1 var(--mono); color: var(--mute); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 28px; }
+  .sw .demo { font: 700 48px/.9 var(--display); letter-spacing: -.045em; }
+  .sw-1 { background: var(--bg); color: var(--ink); }
+  .sw-2 { background: var(--ink); color: var(--bg); }
+  .sw-2 .label { color: #8a8a8a; }
+  .sw-3 { background: var(--orange); color: var(--bg); }
+  .sw-3 .label { color: #8a2f08; }
+  .sw-4 { background: var(--bg); color: var(--orange); }
+
+  /* ───────── specimen detail ───────── */
+  .specimen {
+    display: grid; grid-template-columns: 1.3fr 1fr; gap: 2px;
+    background: var(--rule); border: 1px solid var(--rule);
+  }
+  .specimen > div { background: var(--bg2); padding: 40px 36px; }
+  .specimen-hero { font: 700 240px/.85 var(--display); letter-spacing: -.055em; color: var(--ink); overflow: hidden; }
+  .specimen-meta { display: flex; flex-direction: column; gap: 20px; }
+  .meta-row { display: flex; justify-content: space-between; font: 500 12px/1.4 var(--mono); padding: 10px 0; border-bottom: 1px dashed var(--rule); color: var(--mute-2); }
+  .meta-row:last-child { border-bottom: 0; }
+  .meta-row .k { color: var(--mute); letter-spacing: .04em; }
+  .meta-row .v { color: var(--ink); }
+
+  /* ───────── weight comparison ───────── */
+  .weights { display: flex; flex-direction: column; gap: 24px; padding: 40px; background: var(--bg2); border: 1px solid var(--rule); }
+  .weight-row { display: flex; align-items: baseline; gap: 24px; }
+  .weight-row .tag { font: 500 11px/1 var(--mono); color: var(--mute); letter-spacing: .08em; min-width: 150px; text-transform: uppercase; }
+  .weight-row .word { font: 400 72px/.9 var(--display); letter-spacing: -.035em; color: var(--ink); }
+
+  .w400 { font-weight: 400; }
+  .w500 { font-weight: 500; }
+  .w600 { font-weight: 600; }
+  .w700 { font-weight: 700; letter-spacing: -.04em; }
+  .w800 { font-weight: 800; letter-spacing: -.045em; }
+  .w900 { font-weight: 900; letter-spacing: -.05em; }
+
+  .weight-pick { position: relative; }
+  .weight-pick::before {
+    content: "✓ ship"; position: absolute; left: -8px; top: 0;
+    font: 700 10px/1 var(--mono); color: var(--orange);
+    letter-spacing: .12em; transform: translateX(-100%) translateY(24px);
+    white-space: nowrap; padding-right: 12px;
+  }
+
+  /* ───────── code block ───────── */
+  pre {
+    font: 500 13px/1.55 var(--mono); background: #111; color: #c7c7c5;
+    padding: 24px 28px; border: 1px solid var(--rule); overflow: auto;
+  }
+  pre .c { color: var(--mute); }
+  pre .k { color: #fbbf24; }
+  pre .s { color: #7cc48b; }
+
+  /* ───────── callout ───────── */
+  .callout {
+    border-left: 2px solid var(--orange);
+    background: #0f0f10;
+    padding: 22px 26px;
+    margin-top: 24px;
+  }
+  .callout .tag {
+    font: 700 11px/1 var(--mono); color: var(--orange);
+    letter-spacing: .14em; text-transform: uppercase; margin-bottom: 10px;
+  }
+  .callout .body { font: 400 14px/1.65 var(--display); color: #c7c7c5; max-width: 720px; }
+  .callout strong { color: var(--ink); font-weight: 700; }
+
+  /* ───────── small-size legibility ───────── */
+  .smalls { display: flex; gap: 40px; align-items: flex-end; padding: 40px; background: var(--bg2); border: 1px solid var(--rule); }
+  .sm { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+  .sm .w { font: 700 var(--s, 16px)/.9 var(--display); letter-spacing: -.045em; color: var(--ink); }
+  .sm .px { font: 500 10px/1 var(--mono); color: var(--mute); letter-spacing: .1em; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="kicker">motion · wordmark · 2026-04-12</div>
+  <h1>Text-only wordmark <em>— League Spartan Bold · shipping canonical</em></h1>
+</header>
+
+<!-- ══════════ 01. Primary wordmark ══════════ -->
+<section>
+  <div class="section-head">
+    <div class="num">01</div>
+    <h2>Primary wordmark</h2>
+    <div class="note">Title case — majuscule M, lowercase rest. League Spartan Bold (700), tracking −0.04em. Ball icon deferred. Wordmark carries the brand alone for now.</div>
+  </div>
+
+  <div class="canvas" style="padding:120px 56px">
+    <div class="corner">canonical · title case · 700</div>
+    <div class="corner corner-r">tracking −.045em</div>
+    <div class="wm" style="font-size:clamp(120px, 16vw, 220px)">Motion</div>
+  </div>
+</section>
+
+<!-- ══════════ 02. Scale ladder ══════════ -->
+<section>
+  <div class="section-head">
+    <div class="num">02</div>
+    <h2>Scale ladder</h2>
+    <div class="note">Same wordmark, six real deployment sizes. Tracking and weight are tuned at hero scale — nav-scale holds up with no adjustment.</div>
+  </div>
+
+  <div class="canvas">
+    <div class="ladder">
+
+      <div class="ladder-row">
+        <div class="ladder-meta"><b>Hero · 160 px</b><br>weight 700<br>tracking −.04em</div>
+        <div class="wm" style="font-size:160px">Motion</div>
+      </div>
+
+      <div class="ladder-row">
+        <div class="ladder-meta"><b>Section head · 72 px</b><br>weight 700<br>tracking −.04em</div>
+        <div class="wm" style="font-size:72px">Motion</div>
+      </div>
+
+      <div class="ladder-row">
+        <div class="ladder-meta"><b>Page H1 · 48 px</b><br>weight 700<br>tracking −.04em</div>
+        <div class="wm" style="font-size:48px;letter-spacing:-.04em">Motion</div>
+      </div>
+
+      <div class="ladder-row">
+        <div class="ladder-meta"><b>Nav · 22 px</b><br>weight 700<br>tracking −.035em</div>
+        <div class="wm" style="font-size:22px;letter-spacing:-.035em">Motion</div>
+      </div>
+
+      <div class="ladder-row">
+        <div class="ladder-meta"><b>Footer · 14 px</b><br>weight 700<br>tracking −.025em</div>
+        <div class="wm" style="font-size:14px;letter-spacing:-.025em">Motion</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="callout">
+    <div class="tag">Rule</div>
+    <div class="body">Tracking tightens with size. At 160 px+, <strong>−.04em</strong> closes the gaps between wide Spartan letterforms without jamming the M into the o. At nav scale, back off to <strong>−.035em</strong> to preserve legibility. Below 14 px, use <strong>−.025em</strong> or 0 — don't crush the type.</div>
+  </div>
+</section>
+
+<!-- ══════════ 03. In context ══════════ -->
+<section>
+  <div class="section-head">
+    <div class="num">03</div>
+    <h2>In context — nav + hero</h2>
+    <div class="note">How it actually lives. Nav on top, hero beneath. Orange reserved for the CTA per design-system rule ("orange ONLY for basketball-related / interactive").</div>
+  </div>
+
+  <div class="nav" style="margin-bottom:24px">
+    <span class="nav-wm">Motion</span>
+    <div class="nav-links">
+      <a>Coaches</a><a>Plays</a><a>Game IQ</a><a>Pricing</a><a>Sign in</a>
+    </div>
+    <button class="nav-cta">Start free</button>
+  </div>
+
+  <div class="canvas" style="padding:96px 56px 64px">
+    <div class="corner">hero · 01</div>
+    <div style="font: 600 13px/1 var(--mono); color: var(--orange); letter-spacing:.16em; text-transform:uppercase; margin-bottom:24px">AI basketball coaching · 2026</div>
+    <div class="wm" style="font-size:clamp(96px, 12vw, 168px); margin-bottom:20px">Motion</div>
+    <div style="font: 500 22px/1.3 var(--display); letter-spacing:-.01em; color: var(--mute-2); max-width:640px">
+      The coach that coaches the coach. Opponent scouted. Plays matched. Halftime reset. Before tip-off.
+    </div>
+    <div style="margin-top:40px; display:flex; gap:14px">
+      <button class="nav-cta" style="padding:14px 22px;font-size:14px">Start free</button>
+      <button style="font:600 14px/1 var(--display);letter-spacing:-.01em;padding:14px 22px;background:transparent;color:var(--ink);border:1px solid var(--rule);cursor:pointer">See a game plan</button>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 04. Weight study ══════════ -->
+<section>
+  <div class="section-head">
+    <div class="num">04</div>
+    <h2>Weight study — why 700, not 900</h2>
+    <div class="note">Running every available weight at the same 72 px so the difference is legible, not theoretical.</div>
+  </div>
+
+  <div class="weights">
+    <div class="weight-row"><span class="tag">Regular · 400</span><span class="word w400">Motion</span></div>
+    <div class="weight-row"><span class="tag">Medium · 500</span><span class="word w500">Motion</span></div>
+    <div class="weight-row"><span class="tag">SemiBold · 600</span><span class="word w600">Motion</span></div>
+    <div class="weight-row weight-pick"><span class="tag">Bold · 700 ★</span><span class="word w700">Motion</span></div>
+    <div class="weight-row"><span class="tag">ExtraBold · 800</span><span class="word w800">Motion</span></div>
+    <div class="weight-row"><span class="tag">Black · 900</span><span class="word w900">Motion</span></div>
+  </div>
+
+  <div class="callout">
+    <div class="tag">Why 700</div>
+    <div class="body">
+      <strong>900 (Black)</strong> is what PrizePicks / Overtime / hype-culture brands use — loud and square. <strong>700 (Bold)</strong> keeps presence without volume. League Spartan's wide geometric forms already carry confidence at 700; going heavier makes the counters close up and the word start to look like a brick. Bold = calibrated presence, which fits "coaches the coach" better than a shout.
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 05. Color treatments ══════════ -->
+<section>
+  <div class="section-head">
+    <div class="num">05</div>
+    <h2>Color treatments</h2>
+    <div class="note">Four contexts. Rule: the wordmark inherits the surface. Orange is accent, never wordmark body.</div>
+  </div>
+
+  <div class="swatches">
+    <div class="sw sw-1"><span class="label">01 · ink on bg · primary</span><span class="demo">Motion</span></div>
+    <div class="sw sw-2"><span class="label">02 · bg on ink · inverse</span><span class="demo">Motion</span></div>
+    <div class="sw sw-3"><span class="label">03 · bg on orange · alert</span><span class="demo">Motion</span></div>
+    <div class="sw sw-4"><span class="label">04 · orange on bg · rare</span><span class="demo">Motion</span></div>
+  </div>
+
+  <div class="callout">
+    <div class="tag">Usage</div>
+    <div class="body">
+      <strong>01</strong> is the default — everywhere. <strong>02</strong> for light-themed pages (press, PDF exports). <strong>03</strong> only for CTAs where the whole panel is orange. <strong>04</strong> reserved — use maybe once on a launch splash for drama, never in normal flow. Keeping #f97316 scarce is what keeps it valuable.
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 06. Small sizes ══════════ -->
+<section>
+  <div class="section-head">
+    <div class="num">06</div>
+    <h2>Small-size legibility</h2>
+    <div class="note">League Spartan stays readable down to 11 px — below that the tight tracking fights the letterforms. Below 11 px, use "M" as a monogram favicon.</div>
+  </div>
+
+  <div class="smalls">
+    <div class="sm"><div class="w" style="--s:11px">Motion</div><div class="px">11 px · floor</div></div>
+    <div class="sm"><div class="w" style="--s:14px">Motion</div><div class="px">14 px · footer</div></div>
+    <div class="sm"><div class="w" style="--s:18px">Motion</div><div class="px">18 px · nav-small</div></div>
+    <div class="sm"><div class="w" style="--s:22px">Motion</div><div class="px">22 px · nav ★</div></div>
+    <div class="sm"><div class="w" style="--s:32px">Motion</div><div class="px">32 px · page-title</div></div>
+    <div class="sm"><div class="w" style="--s:48px">Motion</div><div class="px">48 px · h1</div></div>
+  </div>
+
+  <div class="callout">
+    <div class="tag">Favicon plan</div>
+    <div class="body">Wordmark at 16 px is illegible in any typeface. For favicon / app icon / OG thumbnail, use the <strong>capital "M"</strong> in League Spartan 900 on flat orange <code style="font-family:var(--mono);color:var(--orange)">#f97316</code>. Mirrors the wordmark's title case — same initial glyph, scaled up. Mark revisit when we commit to a ball icon.</div>
+  </div>
+</section>
+
+<!-- ══════════ 07. Production specs ══════════ -->
+<section>
+  <div class="section-head">
+    <div class="num">07</div>
+    <h2>Production specs — drop-in CSS</h2>
+    <div class="note">Exactly what goes into the Next.js app to match this lab.</div>
+  </div>
+
+  <pre><span class="c">/* 1. Load League Spartan in app/layout.tsx (Next.js) */</span>
+<span class="k">import</span> { League_Spartan } <span class="k">from</span> <span class="s">"next/font/google"</span>;
+
+<span class="k">const</span> spartan = League_Spartan({
+  subsets: [<span class="s">"latin"</span>],
+  weight: [<span class="s">"400"</span>, <span class="s">"500"</span>, <span class="s">"700"</span>, <span class="s">"900"</span>],
+  variable: <span class="s">"--font-display"</span>,
+  display: <span class="s">"swap"</span>,
+});
+
+<span class="c">/* 2. Attach to &lt;html&gt; via className={spartan.variable} */</span>
+
+<span class="c">/* 3. Wordmark component — src/components/brand/Wordmark.tsx */</span>
+<span class="k">export function</span> Wordmark({ size = <span class="s">"nav"</span> }) {
+  <span class="k">const</span> styles = {
+    nav:    { fontSize: <span class="s">"22px"</span>, letterSpacing: <span class="s">"-0.035em"</span> },
+    h1:     { fontSize: <span class="s">"48px"</span>, letterSpacing: <span class="s">"-0.04em"</span>  },
+    hero:   { fontSize: <span class="s">"clamp(96px, 12vw, 168px)"</span>, letterSpacing: <span class="s">"-0.04em"</span> },
+    footer: { fontSize: <span class="s">"14px"</span>, letterSpacing: <span class="s">"-0.025em"</span> },
+  }[size];
+  <span class="k">return</span> (
+    &lt;span
+      className=<span class="s">"font-display font-bold"</span>
+      style={{ ...styles, lineHeight: <span class="s">".88"</span> }}
+    &gt;
+      Motion
+    &lt;/span&gt;
+  );
+}</pre>
+
+  <div class="callout">
+    <div class="tag">Next step</div>
+    <div class="body">
+      Say the word and I'll: (1) add <code style="font-family:var(--mono);color:var(--orange)">League_Spartan</code> to <code style="font-family:var(--mono);color:var(--orange)">src/app/layout.tsx</code>, (2) create <code style="font-family:var(--mono);color:var(--orange)">src/components/brand/Wordmark.tsx</code> with the four size variants above, (3) swap the current nav and hero on <code style="font-family:var(--mono);color:var(--orange)">src/app/page.tsx</code> to use it. Ball icon stays out until you're ready — token lives in the Wordmark component to swap in later.
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
