@@ -57,3 +57,7 @@ next-env.d.ts
 # local; only the directory contract (README) is versioned.
 /knowledge-base/wiki/_pending/*
 !/knowledge-base/wiki/_pending/README.md
+
+# large pipeline output (61MB) — regenerate with scripts/02_parse_dataset.py
+# from the SportsSettBasketball source. See spec/SPORTSETT_INTEGRATION.md.
+/data/parsed_games.json
