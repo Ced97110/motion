@@ -61,3 +61,9 @@ next-env.d.ts
 # large pipeline output (61MB) — regenerate with scripts/02_parse_dataset.py
 # from the SportsSettBasketball source. See spec/SPORTSETT_INTEGRATION.md.
 /data/parsed_games.json
+
+# dev-only symlink to sibling backend's wiki (post FE/BE split). Keeps the
+# TS scripts in scripts/*.ts working via their historical relative paths
+# without a 12-file refactor. For CI/production that doesn't have
+# backend/ as a sibling, set MOTION_WIKI_DIR (see src/lib/wiki-loader.ts).
+/knowledge-base

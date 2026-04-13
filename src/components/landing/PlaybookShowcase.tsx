@@ -7,15 +7,26 @@ const MONO = "ui-monospace, SFMono-Regular, Menlo, monospace";
 
 const AutoPlayViewer = dynamic(() => import("./AutoPlayViewer"), {
   ssr: false,
-  loading: () => <PosterCourt label="loading…" />,
+  loading: () => <PosterCourt label="loading…" animated />,
 });
 
 export default function PlaybookShowcase() {
   const [loaded, setLoaded] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
 
+  // Mobile detection — under 768px we skip the heavy AutoPlayViewer
+  // hydration and rely on the CSS-animated poster instead.
   useEffect(() => {
-    if (loaded || !sectionRef.current) return;
+    const mq = window.matchMedia("(max-width: 767px)");
+    const apply = () => setIsMobile(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+
+  useEffect(() => {
+    if (loaded || !sectionRef.current || isMobile) return;
     const obs = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting) {
@@ -27,7 +38,7 @@ export default function PlaybookShowcase() {
     );
     obs.observe(sectionRef.current);
     return () => obs.disconnect();
-  }, [loaded]);
+  }, [loaded, isMobile]);
 
   return (
     <section
@@ -83,10 +94,13 @@ export default function PlaybookShowcase() {
         >
           <FrameChrome />
           <div style={{ aspectRatio: "56 / 50", position: "relative" }}>
-            {loaded ? (
+            {loaded && !isMobile ? (
               <AutoPlayViewer />
             ) : (
-              <PosterCourt label="press enter · plays on scroll" />
+              <PosterCourt
+                label={isMobile ? "23-Flare · loops on tap" : "press enter · plays on scroll"}
+                animated
+              />
             )}
           </div>
           <FrameFoot />
@@ -226,20 +240,54 @@ function FrameFoot() {
   );
 }
 
-/* ─────────── static poster (SSR + no-JS fallback) ─────────── */
-function PosterCourt({ label }: { label: string }) {
+/* ─────────── static poster (SSR + no-JS + mobile fallback) ───────────
+ * When `animated` is true, the orange flare cue arrow loops via
+ * stroke-dashoffset and a small pulse travels along it. Pure CSS — no
+ * React rAF, no JS beyond this render. Respects prefers-reduced-motion
+ * (the keyframes reduce to 0ms via the global rule in globals.css).
+ * Total weight added vs. static: ~300 bytes of inline <style>. */
+function PosterCourt({ label, animated }: { label: string; animated?: boolean }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="-28 -3 56 50"
       role="img"
-      aria-label="23-Flare play diagram · half-court showing 5 player positions at the starting formation"
+      aria-label="23-Flare play diagram · half-court showing 5 player positions and a cueing screen arrow"
       style={{
         display: "block",
         width: "100%",
+        height: "100%",
         background: "var(--bg)",
       }}
     >
+      {animated && (
+        <style>{`
+          @keyframes motionPosterTrace {
+            0%   { stroke-dashoffset: 8; opacity: 0.15; }
+            20%  { opacity: 0.9; }
+            70%  { opacity: 0.9; }
+            100% { stroke-dashoffset: 0; opacity: 0.15; }
+          }
+          @keyframes motionPosterPulse {
+            0%   { transform: translate(-7px, 13px); opacity: 0; }
+            20%  { opacity: 1; }
+            80%  { opacity: 1; }
+            100% { transform: translate(-16px, 12px); opacity: 0; }
+          }
+          @keyframes motionPosterBreath {
+            0%, 100% { r: 0.75; opacity: 0.9; }
+            50%      { r: 0.95; opacity: 1;   }
+          }
+          .mp-trace { animation: motionPosterTrace 3.2s cubic-bezier(0.4,0,0.2,1) infinite; }
+          .mp-pulse { animation: motionPosterPulse 3.2s cubic-bezier(0.4,0,0.2,1) infinite; }
+          .mp-rim   { animation: motionPosterBreath 2.4s ease-in-out infinite; }
+          @media (prefers-reduced-motion: reduce) {
+            .mp-trace, .mp-pulse, .mp-rim { animation: none !important; }
+            .mp-trace { opacity: 0.5; }
+          }
+        `}</style>
+      )}
+
       {/* Court outline */}
       <rect x="-25" y="0" width="50" height="47" fill="none" stroke="var(--rule-strong)" strokeWidth="0.12" />
       {/* Key */}
@@ -253,8 +301,16 @@ function PosterCourt({ label }: { label: string }) {
         stroke="var(--rule-strong)"
         strokeWidth="0.12"
       />
-      {/* Rim */}
-      <circle cx="0" cy="5.25" r="0.75" fill="none" stroke="var(--orange)" strokeWidth="0.18" />
+      {/* Rim — breathes subtly when animated */}
+      <circle
+        cx="0"
+        cy="5.25"
+        r="0.75"
+        fill="none"
+        stroke="var(--orange)"
+        strokeWidth="0.18"
+        className={animated ? "mp-rim" : undefined}
+      />
       {/* Halfcourt line */}
       <line x1="-25" y1="47" x2="25" y2="47" stroke="var(--rule-strong)" strokeWidth="0.12" />
 
@@ -289,15 +345,22 @@ function PosterCourt({ label }: { label: string }) {
         </g>
       ))}
 
-      {/* Flare screen cue — faint arrow from 5 to flare point */}
+      {/* Flare screen cue — animated arrow from 5 to flare point */}
       <path
         d="M -7,13 Q -12,10 -16,12"
         fill="none"
         stroke="var(--orange)"
-        strokeWidth="0.18"
-        strokeDasharray="0.6 0.6"
-        opacity="0.5"
+        strokeWidth="0.2"
+        strokeLinecap="round"
+        strokeDasharray="8"
+        opacity={animated ? undefined : 0.5}
+        className={animated ? "mp-trace" : undefined}
       />
+
+      {/* Moving ball pulse (mobile animation) */}
+      {animated && (
+        <circle r="0.55" fill="var(--orange)" className="mp-pulse" />
+      )}
 
       <text
         x="0"
