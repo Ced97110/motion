@@ -188,12 +188,22 @@ export default function Home() {
               .landing-aside {
                 position: relative !important;
                 top: 0 !important;
+                /* Flex-center + overflow:hidden + height:auto collapses the
+                 * absolutely-positioned screen stack to 0 on mobile (flex-item
+                 * height:100% is indeterminate against an auto-height parent,
+                 * and overflow:hidden suppresses the min-height fallback),
+                 * which hides every SVG/diagram. Use a plain block box with a
+                 * real min-height on mobile so the stack renders. */
+                display: block !important;
+                overflow: visible !important;
                 height: auto !important;
+                min-height: 640px;
                 margin-bottom: 40px;
               }
             }
             @media (max-width: 768px) {
               .nav-links { display: none !important; }
+              .landing-aside { min-height: 560px; }
             }
           `,
         }}
