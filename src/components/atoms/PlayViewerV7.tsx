@@ -88,6 +88,12 @@ function calcLen(d: string): number {
 const ease = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
 
 // ----- Marker definitions -----
+// `dribble` and `handoff` use the same small arrowhead terminator as `arrow` so
+// the mask-based reveal has a consistent endpoint. Their distinguishing
+// ornaments (zigzag body for dribble, perpendicular ticks for handoff) are
+// drawn as separate overlays in `MaskedActionPath`.
+type MarkerKind = V7Action["marker"];
+
 interface MarkerDef {
   w: number;
   h: number;
@@ -98,13 +104,15 @@ interface MarkerDef {
   backDist: number;
 }
 
-const MARKER_DEFS: Record<"arrow" | "screen" | "shot", MarkerDef> = {
+const MARKER_DEFS: Record<MarkerKind, MarkerDef> = {
   arrow: { w: 1.4, h: 1.6, refX: 1.4, refY: 0.8, points: "0 0, 1.4 0.8, 0 1.6, 0.1 0.8", backDist: 1.4 },
   screen: { w: 0.4, h: 2.4, refX: 0, refY: 1.2, rect: { x: 0, y: 0, w: 0.4, h: 2.4 }, backDist: 0.2 },
   shot: { w: 3.72, h: 3.72, refX: 1.86, refY: 1.86, backDist: 1.86 },
+  dribble: { w: 1.4, h: 1.6, refX: 1.4, refY: 0.8, points: "0 0, 1.4 0.8, 0 1.6, 0.1 0.8", backDist: 1.4 },
+  handoff: { w: 1.4, h: 1.6, refX: 1.4, refY: 0.8, points: "0 0, 1.4 0.8, 0 1.6, 0.1 0.8", backDist: 1.4 },
 };
 
-function MarkerShape({ type, fill, opacity = 1 }: { type: "arrow" | "screen" | "shot"; fill: string; opacity?: number }) {
+function MarkerShape({ type, fill, opacity = 1 }: { type: MarkerKind; fill: string; opacity?: number }) {
   const d = MARKER_DEFS[type];
   if (type === "screen" && d.rect) {
     return <rect x={d.rect.x} y={d.rect.y} width={d.rect.w} height={d.rect.h} fill={fill} opacity={opacity} />;
@@ -120,13 +128,14 @@ function MarkerShape({ type, fill, opacity = 1 }: { type: "arrow" | "screen" | "
       </g>
     );
   }
+  // arrow, dribble, handoff all share an arrowhead terminator
   return <polygon points={d.points} fill={fill} opacity={opacity} />;
 }
 
 function StaticMarkerDefs() {
   return (
     <defs>
-      {(Object.entries(MARKER_DEFS) as Array<[ "arrow" | "screen" | "shot", MarkerDef ]>).map(([type, d]) => (
+      {(Object.entries(MARKER_DEFS) as Array<[MarkerKind, MarkerDef]>).map(([type, d]) => (
         <g key={type}>
           <marker id={`vis_${type}_dark`} markerUnits="userSpaceOnUse" markerWidth={d.w} markerHeight={d.h} refX={d.refX} refY={d.refY} orient="auto">
             <MarkerShape type={type} fill="rgba(51,51,51,1)" />
@@ -144,6 +153,83 @@ function StaticMarkerDefs() {
       ))}
     </defs>
   );
+}
+
+// Sample a path at evenly-spaced arc lengths, returning `[x, y]` points plus
+// the local unit tangent at each sample. Used to build the dribble zigzag and
+// handoff ticks without re-querying `getPointAtLength` in render loops.
+interface PathSample {
+  x: number;
+  y: number;
+  tx: number; // unit tangent x
+  ty: number; // unit tangent y
+}
+
+function samplePath(d: string, samples: number[]): PathSample[] {
+  if (typeof document === "undefined") return [];
+  const p = makePath(d);
+  if (!p) return [];
+  const out: PathSample[] = [];
+  const eps = 0.25;
+  for (const s of samples) {
+    const at = Math.max(0, Math.min(p.len, s));
+    const pt = p.el.getPointAtLength(at);
+    const ahead = p.el.getPointAtLength(Math.min(p.len, at + eps));
+    const behind = p.el.getPointAtLength(Math.max(0, at - eps));
+    let tx = ahead.x - behind.x;
+    let ty = ahead.y - behind.y;
+    const mag = Math.hypot(tx, ty) || 1;
+    tx /= mag;
+    ty /= mag;
+    out.push({ x: pt.x, y: pt.y, tx, ty });
+  }
+  p.remove();
+  return out;
+}
+
+// Build a zigzag polyline offset perpendicular to the path tangent, alternating
+// sides each sample. The first and last sample sit on the path itself so the
+// wave blends cleanly into the player origin and the arrowhead.
+function buildDribbleZigzag(d: string, pathLen: number): string {
+  if (pathLen <= 0) return "";
+  const spacing = 1.3; // SVG units between zigzag peaks
+  const amplitude = 0.55;
+  const count = Math.max(3, Math.floor(pathLen / spacing));
+  const step = pathLen / count;
+  const positions: number[] = [];
+  for (let i = 0; i <= count; i++) positions.push(i * step);
+  const samples = samplePath(d, positions);
+  if (samples.length === 0) return "";
+  const pts = samples.map((s, i) => {
+    // First and last point anchor to the path; intermediate samples oscillate.
+    const isEnd = i === 0 || i === samples.length - 1;
+    const side = isEnd ? 0 : (i % 2 === 0 ? 1 : -1);
+    // Perpendicular to tangent: rotate (tx,ty) by 90deg = (-ty, tx).
+    const px = s.x + side * amplitude * -s.ty;
+    const py = s.y + side * amplitude * s.tx;
+    return `${px.toFixed(3)},${py.toFixed(3)}`;
+  });
+  return `M${pts.join(" L")}`;
+}
+
+// Build two short perpendicular ticks near the path end to signal the
+// handoff terminator. Ticks sit at ~85% and ~95% of arc length, each ~1.1
+// units long, centered on the path.
+function buildHandoffTicks(d: string, pathLen: number): Array<{ x1: number; y1: number; x2: number; y2: number }> {
+  if (pathLen <= 0) return [];
+  const tickHalf = 0.55;
+  const samples = samplePath(d, [pathLen * 0.85, pathLen * 0.95]);
+  return samples.map((s) => {
+    // Perpendicular to tangent: (-ty, tx) unit vector
+    const nx = -s.ty;
+    const ny = s.tx;
+    return {
+      x1: s.x - nx * tickHalf,
+      y1: s.y - ny * tickHalf,
+      x2: s.x + nx * tickHalf,
+      y2: s.y + ny * tickHalf,
+    };
+  });
 }
 
 function MaskedActionPath({
@@ -175,6 +261,22 @@ function MaskedActionPath({
     : `vis_${action.marker}_${isDashed ? "orange" : "dark"}`;
   const groupOpacity = isGhost ? (isDashed ? 0.15 : 0.10) : lineOpacity;
 
+  // Pre-compute ornament geometry for dribble/handoff. `pathLen` already
+  // invalidates on path change (parent re-keys by uidKey when path mutates).
+  const zigzagD = useMemo(
+    () => (action.marker === "dribble" ? buildDribbleZigzag(action.path, pathLen) : ""),
+    [action.marker, action.path, pathLen],
+  );
+  const handoffTicks = useMemo(
+    () => (action.marker === "handoff" ? buildHandoffTicks(action.path, pathLen) : []),
+    [action.marker, action.path, pathLen],
+  );
+
+  // For dribble we render the zigzag body INSTEAD of the straight underlying
+  // path so the ornament is the line itself. The mask still uses the original
+  // path geometry so the reveal timing matches the underlying trajectory.
+  const renderDribbleBody = action.marker === "dribble" && zigzagD.length > 0;
+
   return (
     <>
       <defs>
@@ -194,15 +296,39 @@ function MaskedActionPath({
         </mask>
       </defs>
       <g mask={`url(#${maskId})`} opacity={groupOpacity}>
-        <path
-          d={action.path}
-          stroke={color}
-          strokeWidth="0.22"
-          fill="none"
-          strokeDasharray={isDashed ? "1.2 0.4" : undefined}
-          markerEnd={`url(#${visibleMarkerId})`}
-          strokeLinecap={isDashed ? "butt" : "round"}
-        />
+        {renderDribbleBody ? (
+          <path
+            d={zigzagD}
+            stroke={color}
+            strokeWidth="0.22"
+            fill="none"
+            strokeDasharray={isDashed ? "1.2 0.4" : undefined}
+            strokeLinejoin="round"
+            strokeLinecap={isDashed ? "butt" : "round"}
+          />
+        ) : (
+          <path
+            d={action.path}
+            stroke={color}
+            strokeWidth="0.22"
+            fill="none"
+            strokeDasharray={isDashed ? "1.2 0.4" : undefined}
+            markerEnd={`url(#${visibleMarkerId})`}
+            strokeLinecap={isDashed ? "butt" : "round"}
+          />
+        )}
+        {action.marker === "handoff" && handoffTicks.map((t, i) => (
+          <line
+            key={i}
+            x1={t.x1}
+            y1={t.y1}
+            x2={t.x2}
+            y2={t.y2}
+            stroke={color}
+            strokeWidth="0.22"
+            strokeLinecap="round"
+          />
+        ))}
       </g>
     </>
   );

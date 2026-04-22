@@ -8,8 +8,20 @@
 // optional dashed) and hits "save" — the component calls `onSave` with the
 // generated SVG path string and waypoint list.
 //
-// Path format: "M x1 y1 L x2 y2 L x3 y3 ...". Straight-line segments only —
-// no cubic béziers yet. Tier 2 will add drag-able control points.
+// Path format: "M x1 y1 L x2 y2 L x3 y3 ..." in straight mode; cubic
+// béziers (`C c1 c2 p`) in smooth mode, emitted from each waypoint's
+// optional cIn/cOut handles with a Catmull-Rom fallback when handles are
+// unset. Gestures in add-mode:
+//   - click empty court → append anchor with no handles (polyline-style)
+//   - click-and-drag empty court (pen-tool) → append anchor AND shape
+//     its cOut as you drag; the previous anchor's cIn is mirrored so the
+//     incoming segment ends tangent
+//   - drag on an existing segment → synthesize cOut[i] and cIn[i+1] to
+//     pull the curve toward the cursor (1/3 segment-length heuristic)
+//   - drag an anchor or handle → reshape in place (anchor translates its
+//     handles with it)
+//   - right-click an anchor → delete it
+// Move-mode drags the whole path as a group.
 //
 // Player positions shown are the PLAY's starting positions — not the
 // end-of-previous-phase positions. For authoring phases after phase 0, the
@@ -19,7 +31,15 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 
-export type DrawerMarker = "arrow" | "screen" | "shot";
+// Mirrors the V7Action marker union in frontend/src/lib/plays/v7-types.ts.
+// If that file is temporarily out of sync (e.g. during parallel edits), widen
+// here defensively so the drawer's local state still compiles.
+export type DrawerMarker =
+  | "arrow"
+  | "screen"
+  | "shot"
+  | "dribble"
+  | "handoff";
 export type DrawerMode = "add" | "move";
 export type DrawerCurvature = "straight" | "smooth";
 
@@ -37,6 +57,15 @@ export interface DrawerWaypoint {
 
 type DragTarget =
   | { type: "anchor"; index: number }
+  // Pen-tool drag: just dropped a new anchor at `index` via mousedown on
+  // empty court, and the user is dragging its cOut handle in the same
+  // gesture. We also mirror to cIn of the previous anchor if one exists
+  // (i.e. index - 1) so the incoming segment ends tangent to this anchor.
+  // Whether the drag crossed CLICK_THRESHOLD is tracked in penMovedRef.
+  | { type: "pen"; index: number; downAt: { x: number; y: number } }
+  // Segment-bend: drag on a segment between waypoint[i] and waypoint[i+1]
+  // synthesizes cOut on [i] and cIn on [i+1] pulling toward cursor.
+  | { type: "segment"; i: number; downAt: { x: number; y: number } }
   | { type: "cIn"; index: number }
   | { type: "cOut"; index: number }
   | null;
@@ -65,9 +94,22 @@ export interface DrawerPlayer {
   isDefender: boolean;
 }
 
+/**
+ * Ghost-context sibling action — the OTHER actions in the phase being
+ * edited. Rendered behind the active edit path so the user does not lose
+ * spatial context while focused on one action.
+ */
+export interface DrawerSibling {
+  path: string;
+  marker: DrawerMarker;
+  dashed?: boolean;
+  move?: { id: string; to: readonly [number, number] };
+}
+
 interface CourtDrawerProps {
   players: DrawerPlayer[];
   initial?: DrawerInitial;
+  siblingActions?: DrawerSibling[];
   onSave: (result: DrawerResult) => void;
   onCancel: () => void;
 }
@@ -75,6 +117,7 @@ interface CourtDrawerProps {
 export default function CourtDrawer({
   players,
   initial,
+  siblingActions = [],
   onSave,
   onCancel,
 }: CourtDrawerProps) {
@@ -95,6 +138,10 @@ export default function CourtDrawer({
     origin: DrawerWaypoint;
     base: DrawerWaypoint[];
   } | null>(null);
+  // Set to true on first pen-drag pointermove past CLICK_THRESHOLD. Cleared
+  // on every pointerup. Lets pointerup distinguish pen-drag (commit handles)
+  // from click-without-drag (strip handles, matches today's click-to-add).
+  const penMovedRef = useRef(false);
   const svgRef = useRef<SVGSVGElement | null>(null);
 
   const pickSvgPoint = useCallback(
@@ -119,25 +166,42 @@ export default function CourtDrawer({
   const handleSvgPointerDown = useCallback(
     (e: React.PointerEvent<SVGSVGElement>) => {
       if (e.target !== e.currentTarget) return;
-      if (mode !== "move") return;
+      // Only left-button interactions start gestures. Right-click on the
+      // canvas does nothing (right-click-to-delete lives on anchors only).
+      if (e.button !== 0) return;
       const pt = pickSvgPoint(e.clientX, e.clientY);
       if (!pt) return;
-      panStartRef.current = { origin: pt, base: waypoints };
+      if (mode === "move") {
+        panStartRef.current = { origin: pt, base: waypoints };
+        (e.currentTarget as SVGSVGElement).setPointerCapture?.(e.pointerId);
+        return;
+      }
+      // ADD MODE. Two sub-gestures, both routed through pointerdown so we
+      // can distinguish click-vs-drag on pointerup:
+      //   1. Segment-bend: pointerdown landed near an existing path segment.
+      //   2. Pen-tool: pointerdown on empty court — create a new anchor
+      //      AND begin dragging its cOut (mirrored to prev's cIn).
+      const segmentHit = curvature === "smooth"
+        ? findSegmentAt(waypoints, pt, SEGMENT_HIT_THRESHOLD)
+        : null;
+      if (segmentHit !== null) {
+        setDragging({ type: "segment", i: segmentHit, downAt: pt });
+        setActiveIndex(null);
+        (e.currentTarget as SVGSVGElement).setPointerCapture?.(e.pointerId);
+        return;
+      }
+      // Pen-tool: append a new anchor, start pen-drag on its cOut. The
+      // new element's index is `waypoints.length` (pre-append length from
+      // this render) — the functional setWaypoints append is a pure +1 so
+      // both pointermove (closure over `dragging`) and pointerup agree.
+      const newIndex = waypoints.length;
+      setWaypoints((prev) => [...prev, pt]);
+      penMovedRef.current = false;
+      setDragging({ type: "pen", index: newIndex, downAt: pt });
+      setActiveIndex(newIndex);
       (e.currentTarget as SVGSVGElement).setPointerCapture?.(e.pointerId);
     },
-    [mode, pickSvgPoint, waypoints],
-  );
-
-  const handleClick = useCallback(
-    (e: React.MouseEvent<SVGSVGElement>) => {
-      // Only ADD-mode creates waypoints. Move mode uses pointerdown instead.
-      if (mode !== "add") return;
-      if (e.target !== e.currentTarget) return;
-      const pt = pickSvgPoint(e.clientX, e.clientY);
-      if (!pt) return;
-      setWaypoints((prev) => [...prev, pt]);
-    },
-    [mode, pickSvgPoint],
+    [mode, pickSvgPoint, waypoints, curvature],
   );
 
   const handlePointerMove = useCallback(
@@ -145,6 +209,31 @@ export default function CourtDrawer({
       if (dragging !== null) {
         const pt = pickSvgPoint(e.clientX, e.clientY);
         if (!pt) return;
+        // Segment-bend: pull cOut[i] and cIn[i+1] toward the cursor.
+        if (dragging.type === "segment") {
+          const i = dragging.i;
+          setWaypoints((prev) => {
+            if (i < 0 || i + 1 >= prev.length) return prev;
+            const a = prev[i];
+            const b = prev[i + 1];
+            const segLen = Math.hypot(b.x - a.x, b.y - a.y);
+            const pull = segLen / 3;
+            const mkHandle = (anchor: DrawerWaypoint) => {
+              const dx = pt.x - anchor.x;
+              const dy = pt.y - anchor.y;
+              const len = Math.hypot(dx, dy) || 1;
+              return {
+                x: round1(anchor.x + (dx / len) * pull),
+                y: round1(anchor.y + (dy / len) * pull),
+              };
+            };
+            const next = [...prev];
+            next[i] = { ...a, cOut: mkHandle(a) };
+            next[i + 1] = { ...b, cIn: mkHandle(b) };
+            return next;
+          });
+          return;
+        }
         setWaypoints((prev) => {
           const next = [...prev];
           const node = { ...next[dragging.index] };
@@ -172,6 +261,26 @@ export default function CourtDrawer({
             node.cIn = { x: pt.x, y: pt.y };
           } else if (dragging.type === "cOut") {
             node.cOut = { x: pt.x, y: pt.y };
+          } else if (dragging.type === "pen") {
+            // Pen-tool: cursor becomes cOut of the just-created anchor.
+            // Mirror to cIn of the PREVIOUS anchor so the incoming segment
+            // ends tangent (symmetric through node.x/y).
+            node.cOut = { x: pt.x, y: pt.y };
+            next[dragging.index] = node;
+            if (dragging.index - 1 >= 0 && dragging.index - 1 < next.length) {
+              const prevNode = { ...next[dragging.index - 1] };
+              prevNode.cIn = {
+                x: round1(2 * node.x - pt.x),
+                y: round1(2 * node.y - pt.y),
+              };
+              next[dragging.index - 1] = prevNode;
+            }
+            const ddx = pt.x - dragging.downAt.x;
+            const ddy = pt.y - dragging.downAt.y;
+            if (Math.hypot(ddx, ddy) >= CLICK_THRESHOLD) {
+              penMovedRef.current = true;
+            }
+            return next;
           }
           next[dragging.index] = node;
           return next;
@@ -202,6 +311,11 @@ export default function CourtDrawer({
   );
 
   const handlePointerUp = useCallback(() => {
+    // Pen-tool click-without-drag: move-handler only writes handles once
+    // the drag passes CLICK_THRESHOLD, so if `penMovedRef` is false nothing
+    // was mirrored and the new anchor stays handle-free — exactly matching
+    // today's click-to-add behavior. No cleanup needed.
+    penMovedRef.current = false;
     setDragging(null);
     panStartRef.current = null;
   }, []);
@@ -338,7 +452,6 @@ export default function CourtDrawer({
           ref={svgRef}
           viewBox="-28 -3 56 50"
           preserveAspectRatio="xMidYMid meet"
-          onClick={handleClick}
           onPointerDown={handleSvgPointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
@@ -355,6 +468,7 @@ export default function CourtDrawer({
           }}
         >
           <CourtBackground />
+          <SiblingGhosts siblings={siblingActions} />
           {players.map((p) => (
             <PlayerMarker key={p.id} player={p} highlight={p.id === moveId} />
           ))}
@@ -462,6 +576,68 @@ export default function CourtDrawer({
 
 function round1(v: number): number {
   return Math.round(v * 10) / 10;
+}
+
+// SVG-unit thresholds. The viewBox is 56 wide × 50 tall, so 0.5 units is
+// ~1% of width — small enough that a deliberate click doesn't register as
+// a drag, large enough to tolerate pointer jitter.
+const CLICK_THRESHOLD = 0.5;
+// Segment hit-test tolerance. ~1.5 units ≈ 3% of width — matches the
+// visual stroke-width generously so users don't need pixel precision.
+const SEGMENT_HIT_THRESHOLD = 1.5;
+
+/**
+ * Distance from a point to a line segment (clamped to endpoints). Used by
+ * `findSegmentAt` to decide whether a pointerdown landed on the polyline
+ * between two anchors. This is an approximation for smooth paths — we treat
+ * each segment as straight for hit-testing, which is fine because the
+ * tolerance band is wider than the typical bezier bow.
+ */
+function distToSegment(
+  px: number,
+  py: number,
+  ax: number,
+  ay: number,
+  bx: number,
+  by: number,
+): number {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const lenSq = dx * dx + dy * dy;
+  if (lenSq === 0) return Math.hypot(px - ax, py - ay);
+  let t = ((px - ax) * dx + (py - ay) * dy) / lenSq;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+}
+
+/**
+ * Returns the index `i` such that the segment between waypoints[i] and
+ * waypoints[i+1] is within `tol` of the point, or null if none. Checks
+ * anchor proximity too: if the click is on top of an anchor we return null
+ * so anchor-drag wins (anchors have their own pointerdown handler anyway,
+ * but this is belt-and-suspenders).
+ */
+function findSegmentAt(
+  waypoints: DrawerWaypoint[],
+  pt: { x: number; y: number },
+  tol: number,
+): number | null {
+  if (waypoints.length < 2) return null;
+  // Reject if the click is inside an anchor's footprint — that's an
+  // anchor-drag, not a segment-bend.
+  for (const w of waypoints) {
+    if (Math.hypot(pt.x - w.x, pt.y - w.y) < 1.0) return null;
+  }
+  let best: { i: number; d: number } | null = null;
+  for (let i = 0; i < waypoints.length - 1; i += 1) {
+    const a = waypoints[i];
+    const b = waypoints[i + 1];
+    const d = distToSegment(pt.x, pt.y, a.x, a.y, b.x, b.y);
+    if (d <= tol && (best === null || d < best.d)) {
+      best = { i, d };
+    }
+  }
+  return best ? best.i : null;
 }
 
 /**
@@ -606,32 +782,52 @@ function Toolbar({
         <option value="straight">straight</option>
       </select>
       <span style={{ color: "#666" }}>|</span>
-      <label htmlFor="marker" style={{ color: "#aaa" }}>
-        marker:
-      </label>
-      <select
-        id="marker"
-        value={marker}
-        onChange={(e) => setMarker(e.target.value as DrawerMarker)}
-        style={{
-          background: "#222",
-          color: "#e5e5e5",
-          border: "1px solid #333",
-          padding: "3px 6px",
-          fontSize: 11,
+      <span style={{ color: "#aaa" }}>marker:</span>
+      <MarkerButton
+        label="arrow"
+        active={marker === "arrow" && !dashed}
+        onClick={() => {
+          setMarker("arrow");
+          setDashed(false);
         }}
-      >
-        <option value="arrow">arrow (cut / move)</option>
-        <option value="screen">screen</option>
-        <option value="shot">shot</option>
-      </select>
+      />
+      {/* "pass" is a preset: arrow + dashed in one click. It is considered
+          active when the current state matches the preset exactly. */}
+      <MarkerButton
+        label="pass"
+        active={marker === "arrow" && dashed}
+        onClick={() => {
+          setMarker("arrow");
+          setDashed(true);
+        }}
+      />
+      <MarkerButton
+        label="dribble"
+        active={marker === "dribble"}
+        onClick={() => setMarker("dribble")}
+      />
+      <MarkerButton
+        label="handoff"
+        active={marker === "handoff"}
+        onClick={() => setMarker("handoff")}
+      />
+      <MarkerButton
+        label="screen"
+        active={marker === "screen"}
+        onClick={() => setMarker("screen")}
+      />
+      <MarkerButton
+        label="shot"
+        active={marker === "shot"}
+        onClick={() => setMarker("shot")}
+      />
       <label style={{ color: "#aaa", display: "flex", gap: 4, alignItems: "center" }}>
         <input
           type="checkbox"
           checked={dashed}
           onChange={(e) => setDashed(e.target.checked)}
         />
-        dashed (pass)
+        dashed
       </label>
       <span style={{ color: "#666" }}>|</span>
       <label htmlFor="moveId" style={{ color: "#aaa" }}>
@@ -725,6 +921,41 @@ function Toolbar({
   );
 }
 
+/**
+ * Compact toolbar button for picking a marker type (or the "pass" preset).
+ * Styled to match the existing undo/clear buttons — radius 0, `--ink`/
+ * `--paper`-aligned palette, no new design tokens. Active state uses a brighter
+ * surface + light text so the current selection reads at a glance.
+ */
+function MarkerButton({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      style={{
+        background: active ? "#e5e5e5" : "#333",
+        color: active ? "#000" : "#e5e5e5",
+        border: "none",
+        padding: "4px 8px",
+        fontSize: 11,
+        fontWeight: active ? 700 : 400,
+        cursor: "pointer",
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
 function CourtBackground() {
   return (
     <g stroke="#555" strokeWidth={0.3} fill="none">
@@ -777,6 +1008,37 @@ function PlayerMarker({
   );
 }
 
+/**
+ * Ghost-render the OTHER actions in the same phase so the user keeps spatial
+ * context while editing one action in isolation. Simplification choice: we
+ * render siblings as PLAIN PATHS (no marker terminator — no T-bar for
+ * screens, no arrowhead for arrows, no zigzag for dribbles). This is the
+ * "legitimate simplification for ghost context" the spec allows: the goal
+ * is spatial memory, not a full second viewer. Ghosts respect the `dashed`
+ * flag and use a muted grey so they recede behind the active edit. Non-
+ * interactive — the whole group gets `pointer-events: none` so siblings
+ * cannot steal pointerdown from the active path or anchors.
+ */
+function SiblingGhosts({ siblings }: { siblings: DrawerSibling[] }) {
+  if (siblings.length === 0) return null;
+  return (
+    <g pointerEvents="none" opacity={0.45}>
+      {siblings.map((s, i) => (
+        <path
+          key={`ghost-${i}`}
+          d={s.path}
+          fill="none"
+          stroke="#999"
+          strokeWidth={0.35}
+          strokeDasharray={s.dashed ? "1.5 1" : undefined}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      ))}
+    </g>
+  );
+}
+
 function Legend() {
   return (
     <div
@@ -795,7 +1057,7 @@ function Legend() {
         pointerEvents: "none",
       }}
     >
-      add-mode: click to place · drag point to reshape · right-click point to delete · move-mode: drag court to translate whole path
+      add-mode: click to place · click-and-drag (pen) to place + shape tangent · drag on segment to bend · drag point to reshape · right-click point to delete · move-mode: drag court to translate whole path
     </div>
   );
 }

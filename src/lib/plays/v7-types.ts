@@ -24,7 +24,15 @@ export interface V7Ball {
 }
 
 export interface V7Action {
-  marker: "arrow" | "screen" | "shot";
+  /**
+   * Visual symbol applied to the action's SVG path:
+   * - `arrow`   — standard cut/pass (filled arrowhead terminator).
+   * - `screen`  — off-ball screen (T-bar perpendicular to path end).
+   * - `shot`    — shot attempt (crosshair disc at endpoint).
+   * - `dribble` — live dribble to basket (wavy/zigzag line along path).
+   * - `handoff` — dribble handoff (solid line with two perpendicular ticks near end).
+   */
+  marker: "arrow" | "screen" | "shot" | "dribble" | "handoff";
   path: string;
   dashed?: boolean;
   move?: V7Move;
