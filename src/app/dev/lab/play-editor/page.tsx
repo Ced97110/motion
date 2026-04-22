@@ -24,9 +24,9 @@ import CourtDrawer, {
 } from "@/components/atoms/CourtDrawer";
 import PlayViewerV7 from "@/components/atoms/PlayViewerV7";
 import { blackPlay } from "@/data/plays/black";
-import { iversonRamV7 } from "@/data/plays/iverson-ram-v7";
 import { lakersFlareSlipV7 } from "@/data/plays/lakers-flare-slip";
 import type { V7Action, V7Play } from "@/lib/plays/v7-types";
+import { derivePhasePreviewPlay } from "@/lib/plays/phase-simulator";
 import { toV7Shape } from "@/lib/plays/toV7";
 
 const EMPTY_STUB: V7Play = {
@@ -71,8 +71,6 @@ const EMPTY_STUB: V7Play = {
 const TEMPLATES: Record<string, () => V7Play> = {
   empty: () => structuredClone(EMPTY_STUB),
   "lakers-flare-slip": () => structuredClone(lakersFlareSlipV7) as V7Play,
-  "iverson-ram (6-phase extraction)": () =>
-    structuredClone(iversonRamV7) as V7Play,
   black: () => toV7Shape(blackPlay),
 };
 
@@ -316,6 +314,11 @@ const TIER_ORDER: Record<WikiTier, number> = {
 
 const API_BASE = process.env.NEXT_PUBLIC_MOTION_API_URL ?? "http://localhost:8080";
 
+// localStorage slot for the in-progress edit. Single slot — the lab is a
+// single-user dev tool, so one draft is plenty. Picking "empty" from the
+// template dropdown is the explicit reset path.
+const DRAFT_KEY = "motion:play-editor:draft";
+
 function initialState(): EditorState {
   return {
     input: JSON.stringify(lakersFlareSlipV7, null, 2),
@@ -362,6 +365,50 @@ export default function PlayEditorPage() {
     message: string;
   } | null>(null);
   const [wikiInlineNotice, setWikiInlineNotice] = useState<string | null>(null);
+  // Gate auto-save until we've had a chance to restore — avoids overwriting a
+  // stored draft with the initialState default on mount.
+  const [draftRestored, setDraftRestored] = useState(false);
+  // When non-null, the right pane renders a single-phase preview (with
+  // players repositioned to their state at the START of that phase) instead
+  // of the full play. Null == normal end-to-end playback.
+  const [previewPhase, setPreviewPhase] = useState<number | null>(null);
+
+  // Restore once on mount. Runs only client-side (useEffect is never SSR'd).
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as { input?: unknown };
+        if (typeof parsed.input === "string" && parsed.input.length > 0) {
+          setState((prev) => applyInput(prev, parsed.input as string, []));
+        }
+      }
+    } catch {
+      // Corrupt JSON or storage disabled — fall back to initialState.
+    }
+    setDraftRestored(true);
+  }, []);
+
+  // Debounced save on every input change. Skipped until the restore effect
+  // has run (see `draftRestored`) so we never clobber the stored draft with
+  // initialState during the first render.
+  useEffect(() => {
+    if (!draftRestored) return;
+    const id = window.setTimeout(() => {
+      try {
+        window.localStorage.setItem(
+          DRAFT_KEY,
+          JSON.stringify({
+            input: state.input,
+            lastModified: Date.now(),
+          }),
+        );
+      } catch {
+        // Quota exceeded / storage disabled — silently drop the save.
+      }
+    }, 500);
+    return () => window.clearTimeout(id);
+  }, [state.input, draftRestored]);
 
   const handleInput = useCallback((next: string) => {
     setState((prev) => applyInput(prev, next));
@@ -633,6 +680,24 @@ export default function PlayEditorPage() {
     [],
   );
 
+  // If the active preview phase slips out of bounds after a delete or
+  // wiki re-import, fall back to normal playback. Done in an effect so we
+  // never trigger a setState during render.
+  const phaseCount = state.displayPlay.phases?.length ?? 0;
+  useEffect(() => {
+    if (previewPhase !== null && previewPhase >= phaseCount) {
+      setPreviewPhase(null);
+    }
+  }, [previewPhase, phaseCount]);
+
+  // Derive a single-phase play whenever previewPhase is active. Memoized
+  // so the PlayViewerV7 only rebuilds when the source play or the target
+  // phase changes — avoids restarting the GSAP timeline on every render.
+  const previewedPlay = useMemo<V7Play>(() => {
+    if (previewPhase === null) return state.displayPlay;
+    return derivePhasePreviewPlay(state.displayPlay, previewPhase);
+  }, [state.displayPlay, previewPhase]);
+
   return (
     <div
       style={{
@@ -751,6 +816,7 @@ export default function PlayEditorPage() {
                 onDelete={handleDeletePhase}
                 onMove={handleMovePhase}
                 onRename={handleRenamePhase}
+                onPreview={(i) => setPreviewPhase(i)}
               />
               <ActionList
                 phase={state.displayPlay.phases?.[drawPhaseIndex]}
@@ -765,7 +831,19 @@ export default function PlayEditorPage() {
                 }}
                 onDelete={(i) => handleDeleteAction(drawPhaseIndex, i)}
               />
-              <PlayViewerV7 play={state.displayPlay} />
+              {previewPhase !== null && (
+                <PreviewBanner
+                  phaseIndex={previewPhase}
+                  phaseLabel={
+                    state.displayPlay.phases?.[previewPhase]?.label ?? ""
+                  }
+                  onExit={() => setPreviewPhase(null)}
+                />
+              )}
+              <PlayViewerV7
+                key={previewPhase === null ? "full" : `preview-${previewPhase}`}
+                play={previewedPlay}
+              />
             </>
           )}
         </div>
@@ -948,9 +1026,6 @@ function Toolbar({
         </option>
         <option value="empty">empty stub</option>
         <option value="lakers-flare-slip">lakers-flare-slip</option>
-        <option value="iverson-ram (6-phase extraction)">
-          iverson-ram (6-phase extraction)
-        </option>
         <option value="black">black (source → v7)</option>
       </select>
       <button
@@ -1212,6 +1287,7 @@ function PhaseList({
   onDelete,
   onMove,
   onRename,
+  onPreview,
 }: {
   phases: V7Play["phases"];
   activeIndex: number;
@@ -1221,6 +1297,7 @@ function PhaseList({
   onDelete: (i: number) => void;
   onMove: (i: number, direction: -1 | 1) => void;
   onRename: (i: number, label: string) => void;
+  onPreview: (i: number) => void;
 }) {
   const count = phases.length;
   return (
@@ -1341,6 +1418,25 @@ function PhaseList({
                   }}
                 >
                   ↓
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPreview(i);
+                  }}
+                  aria-label="preview phase"
+                  title="preview this phase only"
+                  style={{
+                    background: "transparent",
+                    color: "#f26b1f",
+                    border: "1px solid #333",
+                    padding: "2px 6px",
+                    fontSize: 10,
+                    cursor: "pointer",
+                  }}
+                >
+                  ▶
                 </button>
                 <button
                   type="button"
@@ -1508,6 +1604,57 @@ function ActionList({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function PreviewBanner({
+  phaseIndex,
+  phaseLabel,
+  onExit,
+}: {
+  phaseIndex: number;
+  phaseLabel: string;
+  onExit: () => void;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 12,
+        marginBottom: 12,
+        padding: "8px 12px",
+        background: "#1a0d05",
+        border: "1px solid #f26b1f",
+        color: "#f26b1f",
+        fontSize: 11,
+        fontFamily:
+          "ui-monospace, SFMono-Regular, Menlo, Monaco, monospace",
+        letterSpacing: 0.3,
+      }}
+    >
+      <span>
+        previewing phase {phaseIndex + 1}
+        {phaseLabel ? ` · ${phaseLabel}` : ""}
+      </span>
+      <button
+        type="button"
+        onClick={onExit}
+        style={{
+          background: "transparent",
+          color: "#f26b1f",
+          border: "1px solid #f26b1f",
+          padding: "3px 10px",
+          fontSize: 11,
+          fontWeight: 600,
+          cursor: "pointer",
+          fontFamily: "inherit",
+        }}
+      >
+        exit preview
+      </button>
     </div>
   );
 }
